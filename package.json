@@ -1,0 +1,41 @@
+{
+  "name": "route-wise",
+  "version": "1.0.0",
+  "description": "A Multi-Tenant Bus Ticket Booking Platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "install-all": "npm install && npm run install:apps",
+    "install:apps": "cd apps/web && npm install && cd ../api && npm install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "prettier": "^3.1.0",
+    "turbo": "^1.11.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "bus",
+    "booking",
+    "multi-tenant",
+    "transportation",
+    "typescript",
+    "nextjs"
+  ],
+  "author": "RouteWise Team",
+  "license": "MIT"
+}
