@@ -190,15 +190,21 @@ class MongoDBService {
         routeCreated: routes.length > 0
       }
 
-      // Update user with onboarding steps
-      await this.updateUser(userId, { onboardingSteps })
+      // Check if all steps are actually complete
+      const allStepsComplete = Object.values(onboardingSteps).every(step => step === true)
+      
+      // Update user with onboarding steps and correct completion status
+      await this.updateUser(userId, { 
+        onboardingSteps,
+        onboardingComplete: allStepsComplete
+      })
 
       const completedSteps = Object.values(onboardingSteps).filter(step => step === true).length
       const totalSteps = Object.keys(onboardingSteps).length
-
+      
       return {
         ...onboardingSteps,
-        isComplete: user.onboardingComplete,
+        isComplete: allStepsComplete,
         completedSteps,
         totalSteps
       }
@@ -208,9 +214,12 @@ class MongoDBService {
     const completedSteps = Object.values(steps).filter(step => step === true).length
     const totalSteps = Object.keys(steps).length
 
+    // Check if all steps are actually complete
+    const allStepsComplete = Object.values(steps).every(step => step === true)
+
     return {
       ...steps,
-      isComplete: user.onboardingComplete,
+      isComplete: allStepsComplete,
       completedSteps,
       totalSteps
     }
