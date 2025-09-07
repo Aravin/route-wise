@@ -6,11 +6,10 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
-import { 
+import {
   LayoutDashboard,
   Bus,
   Route,
-  Search,
   Users,
   LogOut,
   Menu,
@@ -52,19 +51,9 @@ const navigation = [
     icon: Wrench,
   },
   {
-    name: 'Search Buses',
-    href: '/search',
-    icon: Search,
-  },
-  {
     name: 'Routes',
     href: '/routes',
     icon: Route,
-  },
-  {
-    name: 'Drivers',
-    href: '/drivers',
-    icon: Users,
   },
 ]
 

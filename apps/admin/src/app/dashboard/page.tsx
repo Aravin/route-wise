@@ -175,10 +175,10 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
-                <Link href="/search">
+                <Link href="/bus-types">
                   <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center space-y-2">
                     <Bus className="h-6 w-6" />
-                    <span>Book Bus</span>
+                    <span>Bus Types</span>
                   </Button>
                 </Link>
 

@@ -73,15 +73,12 @@ export function OnboardingComplete({ data, onNext }: OnboardingCompleteProps) {
         </CardContent>
       </Card>
 
-      {/* Fleet Configuration Summary */}
+      {/* Organization Setup Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Fleet Configuration</CardTitle>
+          <CardTitle>Organization Setup</CardTitle>
           <CardDescription>
-            {data.business.busTypes.length > 0 || data.business.routes.length > 0 
-              ? "Your bus fleet setup summary" 
-              : "Fleet configuration was skipped - you can set this up later from the dashboard"
-            }
+            Your organization has been successfully configured
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -105,12 +102,6 @@ export function OnboardingComplete({ data, onNext }: OnboardingCompleteProps) {
               })}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Bus className="h-12 w-12 mx-auto mb-4" />
-              <p className="mb-4">No fleet configuration completed yet.</p>
-              <p className="text-sm">You can configure your bus types and routes later from the dashboard.</p>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -179,9 +170,9 @@ export function OnboardingComplete({ data, onNext }: OnboardingCompleteProps) {
               </p>
             </div>
             <div className="space-y-2">
-              <h4 className="font-semibold">Fleet Management</h4>
+              <h4 className="font-semibold">Bus Types</h4>
               <p className="text-sm text-muted-foreground">
-                Manage your bus fleet, maintenance, and operations
+                Configure different types of buses and their specifications
               </p>
             </div>
             <div className="space-y-2">
@@ -191,9 +182,9 @@ export function OnboardingComplete({ data, onNext }: OnboardingCompleteProps) {
               </p>
             </div>
             <div className="space-y-2">
-              <h4 className="font-semibold">Staff Management</h4>
+              <h4 className="font-semibold">Trip Management</h4>
               <p className="text-sm text-muted-foreground">
-                Manage drivers, conductors, and other staff members
+                Schedule and manage bus trips and journeys
               </p>
             </div>
           </div>

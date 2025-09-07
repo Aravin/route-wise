@@ -31,11 +31,6 @@ const navigation = [
     icon: Building2,
   },
   {
-    name: 'Fleet Management',
-    href: '/fleet',
-    icon: Bus,
-  },
-  {
     name: 'Bus Types',
     href: '/bus-types',
     icon: Wrench,
@@ -54,11 +49,6 @@ const navigation = [
     name: 'Bookings',
     href: '/bookings',
     icon: BookOpen,
-  },
-  {
-    name: 'Drivers',
-    href: '/drivers',
-    icon: Users,
   },
   {
     name: 'Analytics',
