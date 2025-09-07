@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { getAuthenticatedUser } from '@/lib/auth'
+
 export async function GET(request: NextRequest) {
-  const sessionCookie = request.cookies.get('auth0_session')
+  const user = await getAuthenticatedUser(request)
   
-  if (sessionCookie?.value === 'authenticated') {
+  if (user) {
     return NextResponse.json({ 
       authenticated: true,
-      user: { name: 'Admin User', email: 'admin@routewise.com' }
+      user: { name: user.name, email: user.email }
     })
   }
   

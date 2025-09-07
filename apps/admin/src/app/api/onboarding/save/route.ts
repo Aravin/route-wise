@@ -1,37 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mongoDBService } from '@/lib/mongodb-service'
+import { getAuthenticatedUser } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if user is authenticated
-    const sessionCookie = request.cookies.get('auth0_session')
+    // Get authenticated user
+    const user = await getAuthenticatedUser(request)
     
-    if (sessionCookie?.value !== 'authenticated') {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const { organization, business, isComplete, userEmail } = body
 
-    // For demo purposes, use a mock userId
-    // In production, extract userId from JWT token or session
-    const mockUserId = 'user_' + Date.now()
-    
-    // Ensure user exists
-    let user = await mongoDBService.getUserByUserId(mockUserId)
-    if (!user) {
-      user = await mongoDBService.createUser({
-        userId: mockUserId,
-        email: 'admin@routewise.com',
-        name: 'Admin User'
-      })
-    }
-
     // Save organization if provided
     let organizationId
     if (organization) {
       const org = await mongoDBService.createOrganization({
-        userId: mockUserId,
+        userId: user.userId,
         ...organization
       })
       organizationId = org._id
@@ -39,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     // Save onboarding data
     const onboardingData = await mongoDBService.saveOnboardingData({
-      userId: mockUserId,
+      userId: user.userId,
       organization,
       business,
       isComplete
@@ -57,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Update user's onboarding status
     if (isComplete) {
-      await mongoDBService.updateUserOnboardingStatus(mockUserId, true)
+      await mongoDBService.updateUserOnboardingStatus(user.userId, true)
     }
 
     console.log('Saved onboarding data:', onboardingData)

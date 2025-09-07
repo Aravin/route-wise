@@ -14,7 +14,8 @@ import {
   BarChart3,
   Settings,
   HelpCircle,
-  ChevronDown
+  ChevronDown,
+  Building2
 } from 'lucide-react'
 
 const navigation = [
@@ -22,6 +23,11 @@ const navigation = [
     name: 'Dashboard',
     href: '/',
     icon: LayoutDashboard,
+  },
+  {
+    name: 'Organizations',
+    href: '/organizations',
+    icon: Building2,
   },
   {
     name: 'Fleet Management',

@@ -21,15 +21,22 @@ import {
   Bell,
   Settings,
   Sun,
-  Moon
+  Moon,
+  Building2
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useUser } from '@/hooks/use-user'
 
 const navigation = [
   {
     name: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
+  },
+  {
+    name: 'Organizations',
+    href: '/organizations',
+    icon: Building2,
   },
   {
     name: 'Fleet Management',
@@ -71,8 +78,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { theme, setTheme, resolvedTheme } = useTheme()
-
-  const user = { name: 'Admin User', email: 'admin@routewise.com' }
+  const { user, loading } = useUser()
 
   useEffect(() => {
     setMounted(true)
@@ -164,8 +170,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <div className="flex items-center space-x-2 px-3 py-2 text-sm">
                 <User className="h-4 w-4" />
                 <div>
-                  <div className="font-medium">{user.name}</div>
-                  <div className="text-muted-foreground text-xs">{user.email}</div>
+                  <div className="font-medium">{user?.name || 'Loading...'}</div>
+                  <div className="text-muted-foreground text-xs">{user?.email || 'Loading...'}</div>
                 </div>
               </div>
               <button
@@ -243,8 +249,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   <div className="flex items-center space-x-2 px-3 py-2 text-sm">
                     <User className="h-4 w-4" />
                     <div>
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-muted-foreground text-xs">{user.email}</div>
+                      <div className="font-medium">{user?.name || 'Loading...'}</div>
+                      <div className="text-muted-foreground text-xs">{user?.email || 'Loading...'}</div>
                     </div>
                   </div>
                   <button
@@ -344,7 +350,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   >
                     <User className="h-4 w-4" />
                     <span className="hidden md:block text-sm font-medium">
-                      {user.name}
+                      {user?.name || 'Loading...'}
                     </span>
                   </Button>
                   
@@ -352,8 +358,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     <div className="absolute right-0 mt-2 w-48 bg-background rounded-md shadow-lg border z-50">
                       <div className="py-1">
                         <div className="px-4 py-2 text-sm text-muted-foreground border-b">
-                          <div className="font-medium">{user.name}</div>
-                          <div className="text-xs">{user.email}</div>
+                          <div className="font-medium">{user?.name || 'Loading...'}</div>
+                          <div className="text-xs">{user?.email || 'Loading...'}</div>
                         </div>
                         <button
                           onClick={handleProfileClick}

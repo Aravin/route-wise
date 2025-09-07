@@ -158,6 +158,37 @@ class MongoDBService {
     return result as Organization | null
   }
 
+  async getOrganizationsByUserId(userId: string): Promise<Organization[]> {
+    const organizations = await getOrganizationsCollection()
+    const result = await organizations.find({ userId }).toArray()
+    return result as Organization[]
+  }
+
+  async getOrganizationById(id: ObjectId): Promise<Organization | null> {
+    const organizations = await getOrganizationsCollection()
+    const result = await organizations.findOne({ _id: id })
+    return result as Organization | null
+  }
+
+  async updateOrganization(id: ObjectId, updateData: Partial<Organization>): Promise<Organization | null> {
+    const organizations = await getOrganizationsCollection()
+    await organizations.updateOne(
+      { _id: id },
+      { 
+        $set: { 
+          ...updateData,
+          updatedAt: new Date()
+        }
+      }
+    )
+    return this.getOrganizationById(id)
+  }
+
+  async deleteOrganization(id: ObjectId): Promise<void> {
+    const organizations = await getOrganizationsCollection()
+    await organizations.deleteOne({ _id: id })
+  }
+
   // Onboarding operations
   async saveOnboardingData(data: Partial<OnboardingData>): Promise<OnboardingData> {
     const onboarding = await getOnboardingCollection()
