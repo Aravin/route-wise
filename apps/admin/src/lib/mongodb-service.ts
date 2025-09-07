@@ -13,6 +13,12 @@ export interface User {
   email: string
   name: string
   organizationId?: ObjectId
+  onboardingComplete: boolean
+  onboardingSteps: {
+    organizationCreated: boolean
+    busTypeCreated: boolean
+    routeCreated: boolean
+  }
   createdAt: Date
   updatedAt: Date
 }
@@ -87,6 +93,12 @@ class MongoDBService {
       userId: userData.userId || `user_${Date.now()}`,
       email: userData.email || '',
       name: userData.name || '',
+      onboardingComplete: false,
+      onboardingSteps: {
+        organizationCreated: false,
+        busTypeCreated: false,
+        routeCreated: false
+      },
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -116,6 +128,91 @@ class MongoDBService {
       }
     )
     return this.getUserByUserId(userId)
+  }
+
+  async updateOnboardingStep(userId: string, step: keyof User['onboardingSteps']): Promise<void> {
+    const users = await getUsersCollection()
+    await users.updateOne(
+      { userId },
+      { 
+        $set: { 
+          [`onboardingSteps.${step}`]: true,
+          updatedAt: new Date()
+        }
+      }
+    )
+
+    // Check if all steps are complete and update onboardingComplete
+    const user = await this.getUserByUserId(userId)
+    if (user && user.onboardingSteps) {
+      const allStepsComplete = Object.values(user.onboardingSteps).every(step => step === true)
+      if (allStepsComplete && !user.onboardingComplete) {
+        await this.updateUser(userId, { onboardingComplete: true })
+      }
+    }
+  }
+
+  async getOnboardingProgress(userId: string): Promise<{
+    organizationCreated: boolean
+    busTypeCreated: boolean
+    routeCreated: boolean
+    isComplete: boolean
+    completedSteps: number
+    totalSteps: number
+  } | null> {
+    const user = await this.getUserByUserId(userId)
+    if (!user) {
+      return null
+    }
+
+    // If user doesn't have onboardingSteps field, initialize it
+    if (!user.onboardingSteps) {
+      // Check if user has existing data to determine progress
+      const [organizations, busTypes, routes] = await Promise.all([
+        this.getOrganizationsByUserId(userId),
+        this.getBusTypesByUserId(userId),
+        this.getRoutesByUserId(userId)
+      ])
+
+      const onboardingSteps = {
+        organizationCreated: organizations.length > 0,
+        busTypeCreated: busTypes.length > 0,
+        routeCreated: routes.length > 0
+      }
+
+      // Check if all steps are actually complete
+      const allStepsComplete = Object.values(onboardingSteps).every(step => step === true)
+      
+      // Update user with onboarding steps and correct completion status
+      await this.updateUser(userId, { 
+        onboardingSteps,
+        onboardingComplete: allStepsComplete
+      })
+
+      const completedSteps = Object.values(onboardingSteps).filter(step => step === true).length
+      const totalSteps = Object.keys(onboardingSteps).length
+      
+      return {
+        ...onboardingSteps,
+        isComplete: allStepsComplete,
+        completedSteps,
+        totalSteps
+      }
+    }
+
+    const steps = user.onboardingSteps
+    const completedSteps = Object.values(steps).filter(step => step === true).length
+    const totalSteps = Object.keys(steps).length
+
+    // Check if all steps are actually complete
+    const allStepsComplete = Object.values(steps).every(step => step === true)
+
+    return {
+      ...steps,
+      isComplete: allStepsComplete,
+      completedSteps,
+      totalSteps
+    }
   }
 
   // Organization operations
@@ -148,6 +245,9 @@ class MongoDBService {
     
     const result = await organizations.insertOne(organization)
     const createdOrg = { ...organization, _id: result.insertedId }
+    
+    // Update onboarding step for organization creation
+    await this.updateOnboardingStep(orgData.userId || '', 'organizationCreated')
     
     return createdOrg
   }
@@ -281,6 +381,9 @@ class MongoDBService {
     const result = await busTypes.insertOne(busType)
     const createdBusType = { ...busType, _id: result.insertedId }
     
+    // Update onboarding step for bus type creation
+    await this.updateOnboardingStep(busTypeData.userId || '', 'busTypeCreated')
+    
     return createdBusType
   }
 
@@ -339,6 +442,9 @@ class MongoDBService {
     
     const result = await routes.insertOne(route)
     const createdRoute = { ...route, _id: result.insertedId }
+    
+    // Update onboarding step for route creation
+    await this.updateOnboardingStep(routeData.userId || '', 'routeCreated')
     
     return createdRoute
   }

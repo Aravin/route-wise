@@ -8,7 +8,9 @@ import {
   Route, 
   Calendar,
   Users,
-  Building2
+  Building2,
+  CheckCircle,
+  Circle
 } from 'lucide-react'
 
 interface DashboardStats {
@@ -17,20 +19,38 @@ interface DashboardStats {
   totalOrganizations: number
 }
 
+interface OnboardingProgress {
+  organizationCreated: boolean
+  busTypeCreated: boolean
+  routeCreated: boolean
+  isComplete: boolean
+  completedSteps: number
+  totalSteps: number
+}
+
 
 
 export function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const statsRes = await fetch('/api/dashboard/stats')
+        const [statsRes, progressRes] = await Promise.all([
+          fetch('/api/dashboard/stats'),
+          fetch('/api/onboarding/progress')
+        ])
 
         if (statsRes.ok) {
           const statsData = await statsRes.json()
           setStats(statsData)
+        }
+
+        if (progressRes.ok) {
+          const progressData = await progressRes.json()
+          setOnboardingProgress(progressData)
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
@@ -104,6 +124,103 @@ export function AdminDashboard() {
         </p>
       </div>
 
+      {/* Onboarding Progress */}
+      {onboardingProgress && !onboardingProgress.isComplete && (
+        <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <span className="text-blue-900 dark:text-blue-100">Complete Your Setup</span>
+            </CardTitle>
+            <CardDescription className="text-blue-700 dark:text-blue-300">
+              Finish setting up your account to unlock all features
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Progress Bar */}
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(onboardingProgress.completedSteps / onboardingProgress.totalSteps) * 100}%` }}
+                />
+              </div>
+              
+              {/* Steps */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  {onboardingProgress.organizationCreated ? (
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                  )}
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${onboardingProgress.organizationCreated ? 'text-green-700 dark:text-green-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                      Create your organization
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Set up your company details and contact information
+                    </p>
+                  </div>
+                  {!onboardingProgress.organizationCreated && (
+                    <Button size="sm" variant="outline" asChild className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                      <a href="/organizations">Complete</a>
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  {onboardingProgress.busTypeCreated ? (
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                  )}
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${onboardingProgress.busTypeCreated ? 'text-green-700 dark:text-green-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                      Add at least one bus type
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Configure your bus types with seating and pricing
+                    </p>
+                  </div>
+                  {!onboardingProgress.busTypeCreated && (
+                    <Button size="sm" variant="outline" asChild className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                      <a href="/bus-types">Complete</a>
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  {onboardingProgress.routeCreated ? (
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                  )}
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${onboardingProgress.routeCreated ? 'text-green-700 dark:text-green-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                      Create at least one route
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Set up your travel routes and destinations
+                    </p>
+                  </div>
+                  {!onboardingProgress.routeCreated && (
+                    <Button size="sm" variant="outline" asChild className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                      <a href="/routes">Complete</a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {onboardingProgress.completedSteps} of {onboardingProgress.totalSteps} steps completed
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

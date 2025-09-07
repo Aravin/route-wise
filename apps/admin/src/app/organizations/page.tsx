@@ -1,5 +1,7 @@
-import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -512,16 +514,7 @@ function OrganizationsContent() {
   )
 }
 
-export default async function OrganizationsPage() {
-  const cookieStore = cookies()
-  const sessionCookie = cookieStore.get('auth0_session')
-  const userIdCookie = cookieStore.get('user_id')
-
-  // Check if user is authenticated
-  if (sessionCookie?.value !== 'authenticated' || !userIdCookie?.value) {
-    redirect('/api/auth/login?action=login')
-  }
-
+export default function OrganizationsPage() {
   return (
     <AdminLayout>
       <OrganizationsContent />
