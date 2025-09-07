@@ -22,10 +22,18 @@ import {
   Settings,
   Sun,
   Moon,
-  Building2
+  Building2,
+  Wrench,
+  ChevronDown
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useUser } from '@/hooks/use-user'
+
+interface Organization {
+  _id: string
+  name: string
+  isPrimary?: boolean
+}
 
 const navigation = [
   {
@@ -34,14 +42,14 @@ const navigation = [
     icon: LayoutDashboard,
   },
   {
-    name: 'Organizations',
-    href: '/organizations',
-    icon: Building2,
-  },
-  {
     name: 'Fleet Management',
     href: '/fleet',
     icon: Bus,
+  },
+  {
+    name: 'Bus Types',
+    href: '/bus-types',
+    icon: Wrench,
   },
   {
     name: 'Search Buses',
@@ -73,16 +81,48 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     return false
   })
   const [showUserDropdown, setShowUserDropdown] = useState(false)
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
+  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const orgDropdownRef = useRef<HTMLDivElement>(null)
   const { theme, setTheme, resolvedTheme } = useTheme()
   const { user, loading } = useUser()
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Fetch organizations and set primary as selected
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      try {
+        const response = await fetch('/api/organizations')
+        if (response.ok) {
+          const orgs = await response.json()
+          setOrganizations(orgs)
+          
+          // Set primary organization as selected
+          const primaryOrg = orgs.find((org: Organization) => org.isPrimary)
+          if (primaryOrg) {
+            setSelectedOrg(primaryOrg)
+          } else if (orgs.length > 0) {
+            // If no primary, select the first one
+            setSelectedOrg(orgs[0])
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching organizations:', error)
+      }
+    }
+
+    if (user && !loading) {
+      fetchOrganizations()
+    }
+  }, [user, loading])
 
 
   const handleLogout = async () => {
@@ -123,6 +163,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowUserDropdown(false)
+      }
+      if (orgDropdownRef.current && !orgDropdownRef.current.contains(event.target as Node)) {
+        setOrgDropdownOpen(false)
       }
     }
 
@@ -339,6 +382,63 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 <Button variant="ghost" size="sm">
                   <Settings className="h-4 w-4" />
                 </Button>
+                
+                {/* Organization dropdown */}
+                <div className="relative" ref={orgDropdownRef}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setOrgDropdownOpen(!orgDropdownOpen)}
+                    className="flex items-center space-x-2"
+                  >
+                    <Building2 className="h-4 w-4" />
+                    <span className="hidden md:block text-sm font-medium">
+                      {selectedOrg?.name || 'Select Organization'}
+                    </span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                  
+                  {orgDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-background border rounded-md shadow-lg z-50">
+                      <div className="p-2">
+                        <div className="px-3 py-2 text-sm font-medium text-muted-foreground border-b mb-2">
+                          Organizations
+                        </div>
+                        {organizations.map((org) => (
+                          <button
+                            key={org._id}
+                            onClick={() => {
+                              setSelectedOrg(org)
+                              setOrgDropdownOpen(false)
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted flex items-center justify-between ${
+                              selectedOrg?._id === org._id ? 'bg-muted' : ''
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Building2 className="h-4 w-4" />
+                              <span>{org.name}</span>
+                            </div>
+                            {org.isPrimary && (
+                              <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                                Primary
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                        <div className="border-t mt-2 pt-2">
+                          <Link
+                            href="/organizations"
+                            className="block w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted"
+                            onClick={() => setOrgDropdownOpen(false)}
+                          >
+                            Manage Organizations
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 {/* User dropdown */}
                 <div className="relative" ref={dropdownRef}>

@@ -31,6 +31,38 @@ export interface Organization {
   website?: string
   gstNumber?: string
   panNumber?: string
+  isPrimary?: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface BusType {
+  _id?: ObjectId
+  userId: string
+  organizationId: ObjectId
+  name: string
+  acType: ACType
+  seatingType: SeatingType
+  capacity: number
+  lowerSeaterPrice: number
+  upperSeaterPrice: number
+  lowerSleeperPrice: number
+  upperSleeperPrice: number
+  amenities: Amenity[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Route {
+  _id?: ObjectId
+  userId: string
+  organizationId: ObjectId
+  name: string
+  from: string
+  to: string
+  distance: number
+  duration?: number
+  description?: string
   createdAt: Date
   updatedAt: Date
 }
@@ -46,38 +78,6 @@ export enum SeatingType {
   SEATER_SLEEPER = 'SEATER_SLEEPER'
 }
 
-export interface BusType {
-  _id?: ObjectId
-  organizationId: ObjectId
-  name: string
-  acType: ACType
-  seatingType: SeatingType
-  capacity: number
-  amenities: Amenity[]
-  pricing: {
-    // For SEATER - lower and upper deck pricing
-    lowerSeaterPrice: number
-    upperSeaterPrice: number
-    // For SLEEPER - lower and upper deck pricing
-    lowerSleeperPrice: number
-    upperSleeperPrice: number
-  }
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface Route {
-  _id?: ObjectId
-  organizationId: ObjectId
-  name: string
-  from: string
-  to: string
-  distance: number
-  duration: number
-  stops: string[]
-  createdAt: Date
-  updatedAt: Date
-}
 
 
 export interface OnboardingData {
@@ -133,6 +133,15 @@ class MongoDBService {
   // Organization operations
   async createOrganization(orgData: Partial<Organization>): Promise<Organization> {
     const organizations = await getOrganizationsCollection()
+    
+    // If this is being set as primary, ensure no other organization is primary
+    if (orgData.isPrimary) {
+      await organizations.updateMany(
+        { userId: orgData.userId },
+        { $set: { isPrimary: false, updatedAt: new Date() } }
+      )
+    }
+    
     const organization: Organization = {
       userId: orgData.userId || '',
       name: orgData.name || '',
@@ -144,6 +153,7 @@ class MongoDBService {
       website: orgData.website,
       gstNumber: orgData.gstNumber,
       panNumber: orgData.panNumber,
+      isPrimary: orgData.isPrimary || false,
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -172,6 +182,18 @@ class MongoDBService {
 
   async updateOrganization(id: ObjectId, updateData: Partial<Organization>): Promise<Organization | null> {
     const organizations = await getOrganizationsCollection()
+    
+    // If this is being set as primary, ensure no other organization is primary
+    if (updateData.isPrimary) {
+      const currentOrg = await this.getOrganizationById(id)
+      if (currentOrg) {
+        await organizations.updateMany(
+          { userId: currentOrg.userId, _id: { $ne: id } },
+          { $set: { isPrimary: false, updatedAt: new Date() } }
+        )
+      }
+    }
+    
     await organizations.updateOne(
       { _id: id },
       { 
@@ -300,6 +322,123 @@ class MongoDBService {
       busTypes,
       routes
     }
+  }
+
+  // Bus Type operations
+  async createBusType(busTypeData: Partial<BusType>): Promise<BusType> {
+    const busTypes = await getBusTypesCollection()
+    const busType: BusType = {
+      userId: busTypeData.userId || '',
+      organizationId: busTypeData.organizationId || new ObjectId(),
+      name: busTypeData.name || '',
+      acType: busTypeData.acType || ACType.NON_AC,
+      seatingType: busTypeData.seatingType || SeatingType.SEATER,
+      capacity: busTypeData.capacity || 0,
+      lowerSeaterPrice: busTypeData.lowerSeaterPrice || 0,
+      upperSeaterPrice: busTypeData.upperSeaterPrice || 0,
+      lowerSleeperPrice: busTypeData.lowerSleeperPrice || 0,
+      upperSleeperPrice: busTypeData.upperSleeperPrice || 0,
+      amenities: busTypeData.amenities || [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    
+    const result = await busTypes.insertOne(busType)
+    return { ...busType, _id: result.insertedId }
+  }
+
+  async getBusTypesByUserId(userId: string): Promise<BusType[]> {
+    const busTypes = await getBusTypesCollection()
+    const result = await busTypes.find({ userId }).toArray()
+    return result as BusType[]
+  }
+
+  async getBusTypesByOrganizationId(organizationId: ObjectId): Promise<BusType[]> {
+    const busTypes = await getBusTypesCollection()
+    const result = await busTypes.find({ organizationId }).toArray()
+    return result as BusType[]
+  }
+
+  async getBusTypeById(id: ObjectId): Promise<BusType | null> {
+    const busTypes = await getBusTypesCollection()
+    const result = await busTypes.findOne({ _id: id })
+    return result as BusType | null
+  }
+
+  async updateBusType(id: ObjectId, updateData: Partial<BusType>): Promise<BusType | null> {
+    const busTypes = await getBusTypesCollection()
+    await busTypes.updateOne(
+      { _id: id },
+      { 
+        $set: { 
+          ...updateData,
+          updatedAt: new Date()
+        }
+      }
+    )
+    return this.getBusTypeById(id)
+  }
+
+  async deleteBusType(id: ObjectId): Promise<void> {
+    const busTypes = await getBusTypesCollection()
+    await busTypes.deleteOne({ _id: id })
+  }
+
+  // Route operations
+  async createRoute(routeData: Partial<Route>): Promise<Route> {
+    const routes = await getRoutesCollection()
+    const route: Route = {
+      userId: routeData.userId || '',
+      organizationId: routeData.organizationId || new ObjectId(),
+      name: routeData.name || '',
+      from: routeData.from || '',
+      to: routeData.to || '',
+      distance: routeData.distance || 0,
+      duration: routeData.duration,
+      description: routeData.description,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    
+    const result = await routes.insertOne(route)
+    return { ...route, _id: result.insertedId }
+  }
+
+  async getRoutesByUserId(userId: string): Promise<Route[]> {
+    const routes = await getRoutesCollection()
+    const result = await routes.find({ userId }).toArray()
+    return result as Route[]
+  }
+
+  async getRoutesByOrganizationId(organizationId: ObjectId): Promise<Route[]> {
+    const routes = await getRoutesCollection()
+    const result = await routes.find({ organizationId }).toArray()
+    return result as Route[]
+  }
+
+  async getRouteById(id: ObjectId): Promise<Route | null> {
+    const routes = await getRoutesCollection()
+    const result = await routes.findOne({ _id: id })
+    return result as Route | null
+  }
+
+  async updateRoute(id: ObjectId, updateData: Partial<Route>): Promise<Route | null> {
+    const routes = await getRoutesCollection()
+    await routes.updateOne(
+      { _id: id },
+      { 
+        $set: { 
+          ...updateData,
+          updatedAt: new Date()
+        }
+      }
+    )
+    return this.getRouteById(id)
+  }
+
+  async deleteRoute(id: ObjectId): Promise<void> {
+    const routes = await getRoutesCollection()
+    await routes.deleteOne({ _id: id })
   }
 }
 

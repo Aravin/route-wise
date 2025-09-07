@@ -53,7 +53,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, address, regOffice, phone, phone2, email, website, gstNumber, panNumber } = body
+    const { name, address, regOffice, phone, phone2, email, website, gstNumber, panNumber, isPrimary } = body
 
     // Validate required fields
     if (!name || !address || !phone || !email) {
@@ -85,7 +85,8 @@ export async function PUT(
       email,
       website,
       gstNumber,
-      panNumber
+      panNumber,
+      isPrimary
     })
 
     return NextResponse.json(updatedOrganization)

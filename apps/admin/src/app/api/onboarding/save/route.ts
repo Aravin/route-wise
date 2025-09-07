@@ -35,10 +35,35 @@ export async function POST(request: NextRequest) {
     // Save business data to separate collections if provided
     if (organizationId && business) {
       if (business.busTypes?.length > 0) {
-        await mongoDBService.saveBusTypes(organizationId, business.busTypes)
+        for (const busType of business.busTypes) {
+          await mongoDBService.createBusType({
+            userId: user.userId,
+            organizationId: organizationId,
+            name: busType.name,
+            acType: busType.acType,
+            seatingType: busType.seatingType,
+            capacity: busType.capacity,
+            lowerSeaterPrice: busType.lowerSeaterPrice,
+            upperSeaterPrice: busType.upperSeaterPrice,
+            lowerSleeperPrice: busType.lowerSleeperPrice,
+            upperSleeperPrice: busType.upperSleeperPrice,
+            amenities: busType.amenities
+          })
+        }
       }
       if (business.routes?.length > 0) {
-        await mongoDBService.saveRoutes(organizationId, business.routes)
+        for (const route of business.routes) {
+          await mongoDBService.createRoute({
+            userId: user.userId,
+            organizationId: organizationId,
+            name: route.name,
+            from: route.from,
+            to: route.to,
+            distance: route.distance,
+            duration: route.duration,
+            description: route.description
+          })
+        }
       }
     }
 

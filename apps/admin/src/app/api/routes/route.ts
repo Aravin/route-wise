@@ -1,24 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { ObjectId } from 'mongodb'
 import { mongoDBService } from '@/lib/mongodb-service'
 import { getAuthenticatedUser } from '@/lib/auth'
 
-// GET /api/organizations - List all organizations for the logged-in user
 export async function GET(request: NextRequest) {
   try {
-    // Get authenticated user
     const user = await getAuthenticatedUser(request)
     
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    // Get organizations for the user
-    const organizations = await mongoDBService.getOrganizationsByUserId(user.userId)
-    
-    return NextResponse.json(organizations)
+
+    const routes = await mongoDBService.getRoutesByUserId(user.userId)
+    return NextResponse.json(routes)
 
   } catch (error) {
-    console.error('Error fetching organizations:', error)
+    console.error('Error fetching routes:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -26,10 +23,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/organizations - Create a new organization
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user
     const user = await getAuthenticatedUser(request)
     
     if (!user) {
@@ -37,35 +32,41 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, address, regOffice, phone, phone2, email, website, gstNumber, panNumber, isPrimary } = body
+    const { name, from, to, distance, duration, description } = body
 
     // Validate required fields
-    if (!name || !address || !phone || !email) {
+    if (!name || !from || !to || !distance) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, address, phone, email' },
+        { error: 'Missing required fields: name, from, to, distance' },
         { status: 400 }
       )
     }
 
-    // Create organization
-    const organization = await mongoDBService.createOrganization({
+    // Get user's primary organization
+    const organization = await mongoDBService.getOrganizationByUserId(user.userId)
+    if (!organization) {
+      return NextResponse.json(
+        { error: 'No organization found. Please complete onboarding first.' },
+        { status: 400 }
+      )
+    }
+
+    // Create route
+    const route = await mongoDBService.createRoute({
       userId: user.userId,
+      organizationId: organization._id!,
       name,
-      address,
-      regOffice,
-      phone,
-      phone2,
-      email,
-      website,
-      gstNumber,
-      panNumber,
-      isPrimary
+      from,
+      to,
+      distance,
+      duration,
+      description
     })
 
-    return NextResponse.json(organization, { status: 201 })
+    return NextResponse.json(route, { status: 201 })
 
   } catch (error) {
-    console.error('Error creating organization:', error)
+    console.error('Error creating route:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

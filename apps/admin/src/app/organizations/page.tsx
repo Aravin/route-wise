@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { AdminLayout } from '@/components/layout/admin-layout'
 import { 
   Building2, 
   Plus, 
@@ -31,11 +32,12 @@ interface Organization {
   website?: string
   gstNumber?: string
   panNumber?: string
+  isPrimary?: boolean
   createdAt: string
   updatedAt: string
 }
 
-export default function OrganizationsPage() {
+function OrganizationsContent() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -50,7 +52,8 @@ export default function OrganizationsPage() {
     email: '',
     website: '',
     gstNumber: '',
-    panNumber: ''
+    panNumber: '',
+    isPrimary: false
   })
 
   useEffect(() => {
@@ -75,6 +78,21 @@ export default function OrganizationsPage() {
     e.preventDefault()
     
     try {
+      // If setting as primary, ensure no other organization is primary
+      if (formData.isPrimary) {
+        // First, set all other organizations to not primary
+        const updatePromises = organizations
+          .filter(org => org._id !== editingOrg?._id)
+          .map(org => 
+            fetch(`/api/organizations/${org._id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...org, isPrimary: false })
+            })
+          )
+        await Promise.all(updatePromises)
+      }
+
       const url = editingOrg ? `/api/organizations/${editingOrg._id}` : '/api/organizations'
       const method = editingOrg ? 'PUT' : 'POST'
       
@@ -106,7 +124,8 @@ export default function OrganizationsPage() {
       email: org.email,
       website: org.website || '',
       gstNumber: org.gstNumber || '',
-      panNumber: org.panNumber || ''
+      panNumber: org.panNumber || '',
+      isPrimary: org.isPrimary || false
     })
     setShowForm(true)
   }
@@ -137,7 +156,8 @@ export default function OrganizationsPage() {
       email: '',
       website: '',
       gstNumber: '',
-      panNumber: ''
+      panNumber: '',
+      isPrimary: false
     })
     setEditingOrg(null)
     setShowForm(false)
@@ -148,6 +168,13 @@ export default function OrganizationsPage() {
     org.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     org.phone.includes(searchTerm)
   )
+
+  // Sort organizations - primary first, then by creation date
+  const sortedOrganizations = [...filteredOrganizations].sort((a, b) => {
+    if (a.isPrimary && !b.isPrimary) return -1
+    if (!a.isPrimary && b.isPrimary) return 1
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  })
 
   if (loading) {
     return (
@@ -300,6 +327,23 @@ export default function OrganizationsPage() {
                   </div>
                 </div>
 
+                {/* Primary Organization Checkbox */}
+                <div className="flex items-center space-x-2 pt-4 border-t">
+                  <input
+                    id="isPrimary"
+                    type="checkbox"
+                    checked={formData.isPrimary}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isPrimary: e.target.checked }))}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor="isPrimary" className="text-sm font-medium">
+                    Set as Primary Organization
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    (Only one organization can be primary)
+                  </span>
+                </div>
+
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="address">Business Address *</Label>
@@ -347,7 +391,7 @@ export default function OrganizationsPage() {
 
       {/* Organizations List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredOrganizations.map((org) => (
+        {sortedOrganizations.map((org, index) => (
           <Card key={org._id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex justify-between items-start">
@@ -357,6 +401,11 @@ export default function OrganizationsPage() {
                     <Mail className="h-3 w-3 mr-1" />
                     {org.email}
                   </CardDescription>
+                  {org.isPrimary && (
+                    <Badge variant="secondary" className="mt-2 w-fit">
+                      Primary Organization
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex space-x-1">
                   <Button
@@ -366,14 +415,17 @@ export default function OrganizationsPage() {
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(org._id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {/* Hide delete button for primary organization */}
+                  {!org.isPrimary && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(org._id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -458,5 +510,13 @@ export default function OrganizationsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function OrganizationsPage() {
+  return (
+    <AdminLayout>
+      <OrganizationsContent />
+    </AdminLayout>
   )
 }

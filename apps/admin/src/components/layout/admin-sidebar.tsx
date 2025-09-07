@@ -15,7 +15,8 @@ import {
   Settings,
   HelpCircle,
   ChevronDown,
-  Building2
+  Building2,
+  Wrench
 } from 'lucide-react'
 
 const navigation = [
@@ -33,6 +34,11 @@ const navigation = [
     name: 'Fleet Management',
     href: '/fleet',
     icon: Bus,
+  },
+  {
+    name: 'Bus Types',
+    href: '/bus-types',
+    icon: Wrench,
   },
   {
     name: 'Routes',
