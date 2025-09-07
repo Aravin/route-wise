@@ -41,11 +41,6 @@ const navigation = [
     icon: LayoutDashboard,
   },
   {
-    name: 'Fleet Management',
-    href: '/fleet',
-    icon: Bus,
-  },
-  {
     name: 'Bus Types',
     href: '/bus-types',
     icon: Wrench,

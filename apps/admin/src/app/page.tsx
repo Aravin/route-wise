@@ -21,8 +21,12 @@ export default async function AdminHomePage() {
     } else {
       redirect('/onboarding')
     }
-  } catch (error) {
-    console.error('Error checking onboarding status:', error)
+  } catch (error: any) {
+    // Only log actual errors, not NEXT_REDIRECT errors
+    if (error?.digest !== 'NEXT_REDIRECT') {
+      console.error('Error checking onboarding status:', error)
+    }
+
     // If there's an error, redirect to onboarding as fallback
     redirect('/onboarding')
   }
