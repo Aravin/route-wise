@@ -10,27 +10,46 @@ import Link from 'next/link'
 
 export default function DashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isOnboardingComplete, setIsOnboardingComplete] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is authenticated (simplified check)
-    const checkAuth = async () => {
+    const checkAuthAndOnboarding = async () => {
       try {
+        // Check authentication
         const response = await fetch('/api/auth/me')
-        if (response.ok) {
-          setIsAuthenticated(true)
-        } else {
+        if (!response.ok) {
           router.push('/auth/login')
+          return
+        }
+
+        setIsAuthenticated(true)
+
+        // Check onboarding status
+        const onboardingResponse = await fetch('/api/onboarding/status')
+        if (onboardingResponse.ok) {
+          const onboardingData = await onboardingResponse.json()
+          if (onboardingData?.isComplete) {
+            setIsOnboardingComplete(true)
+          } else {
+            router.push('/onboarding')
+            return
+          }
+        } else {
+          // If we can't check onboarding status, redirect to onboarding
+          router.push('/onboarding')
+          return
         }
       } catch (error) {
+        console.error('Error checking authentication or onboarding:', error)
         router.push('/auth/login')
       } finally {
         setIsLoading(false)
       }
     }
-    
-    checkAuth()
+
+    checkAuthAndOnboarding()
   }, [router])
 
   if (isLoading) {
@@ -44,8 +63,8 @@ export default function DashboardPage() {
     )
   }
 
-  if (!isAuthenticated) {
-    return null // Will redirect to login
+  if (!isAuthenticated || !isOnboardingComplete) {
+    return null // Will redirect
   }
 
   return (
