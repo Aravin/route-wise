@@ -1,52 +1,15 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Star, Quote } from 'lucide-react'
 
-const testimonials = [
-  {
-    name: 'Priya Sharma',
-    location: 'Mumbai',
-    rating: 5,
-    text: 'RouteWise made my travel planning so much easier! The interface is intuitive and I love the real-time updates about my bus.',
-    avatar: 'PS',
-  },
-  {
-    name: 'Rajesh Kumar',
-    location: 'Delhi',
-    rating: 5,
-    text: 'Excellent service! The seat selection feature is amazing and the payment process is very secure. Highly recommended!',
-    avatar: 'RK',
-  },
-  {
-    name: 'Anita Patel',
-    location: 'Bangalore',
-    rating: 5,
-    text: 'I\'ve been using RouteWise for all my intercity travels. The booking process is smooth and customer support is responsive.',
-    avatar: 'AP',
-  },
-  {
-    name: 'Vikram Singh',
-    location: 'Chennai',
-    rating: 5,
-    text: 'Great platform with multiple bus operators. The price comparison feature helps me find the best deals every time.',
-    avatar: 'VS',
-  },
-  {
-    name: 'Sneha Reddy',
-    location: 'Hyderabad',
-    rating: 5,
-    text: 'Love the mobile app! It\'s fast, reliable, and the offline ticket feature is a lifesaver during network issues.',
-    avatar: 'SR',
-  },
-  {
-    name: 'Amit Joshi',
-    location: 'Pune',
-    rating: 5,
-    text: 'RouteWise has transformed how I book bus tickets. The multi-tenant approach means I get access to more options.',
-    avatar: 'AJ',
-  },
-]
+// TODO: Replace with real testimonials from database
+const testimonials: any[] = []
 
 export function Testimonials() {
+  // Hide testimonials section if no data
+  if (testimonials.length === 0) {
+    return null
+  }
+
   return (
     <section className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">

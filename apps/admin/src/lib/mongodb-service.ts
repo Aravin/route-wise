@@ -130,6 +130,20 @@ class MongoDBService {
     )
   }
 
+  async updateUser(userId: string, updateData: Partial<User>): Promise<User | null> {
+    const users = await getUsersCollection()
+    await users.updateOne(
+      { userId },
+      { 
+        $set: { 
+          ...updateData,
+          updatedAt: new Date()
+        }
+      }
+    )
+    return this.getUserByUserId(userId)
+  }
+
   // Organization operations
   async createOrganization(orgData: Partial<Organization>): Promise<Organization> {
     const organizations = await getOrganizationsCollection()

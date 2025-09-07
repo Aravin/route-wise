@@ -1,35 +1,90 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AdminLayout } from '@/components/layout/admin-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X, Loader2 } from 'lucide-react'
+
+interface ProfileData {
+  name: string
+  email: string
+  phone: string
+  location: string
+  joinDate: string
+  role: string
+  department: string
+  organizationId?: string
+}
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
-  const [profile, setProfile] = useState({
-    name: 'Admin User',
-    email: 'admin@routewise.com',
-    phone: '+91 98765 43210',
-    location: 'Bangalore, Karnataka',
-    joinDate: 'January 2024',
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [profile, setProfile] = useState<ProfileData>({
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    joinDate: '',
     role: 'Administrator',
     department: 'Operations'
   })
 
-  const [editProfile, setEditProfile] = useState(profile)
+  const [editProfile, setEditProfile] = useState<ProfileData>(profile)
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch('/api/profile')
+        if (response.ok) {
+          const profileData = await response.json()
+          setProfile(profileData)
+          setEditProfile(profileData)
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [])
 
   const handleEdit = () => {
     setEditProfile(profile)
     setIsEditing(true)
   }
 
-  const handleSave = () => {
-    setProfile(editProfile)
-    setIsEditing(false)
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editProfile.name,
+          phone: editProfile.phone,
+          location: editProfile.location,
+        }),
+      })
+
+      if (response.ok) {
+        setProfile(editProfile)
+        setIsEditing(false)
+      } else {
+        console.error('Failed to update profile')
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleCancel = () => {
@@ -42,6 +97,52 @@ export default function ProfilePage() {
       ...prev,
       [field]: value
     }))
+  }
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Profile Settings</h1>
+          <p className="text-muted-foreground">Loading profile data...</p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
+                  <div className="w-24 h-24 bg-muted animate-pulse rounded-full mx-auto mb-4" />
+                  <div className="h-6 w-24 bg-muted animate-pulse rounded mx-auto mb-2" />
+                  <div className="h-4 w-20 bg-muted animate-pulse rounded mx-auto mb-2" />
+                  <div className="h-4 w-16 bg-muted animate-pulse rounded mx-auto" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <div className="h-6 w-40 bg-muted animate-pulse rounded mb-2" />
+                <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                      <div className="h-10 w-full bg-muted animate-pulse rounded" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </AdminLayout>
+    )
   }
 
   return (
@@ -101,11 +202,15 @@ export default function ProfilePage() {
                   <div className="flex space-x-2">
                     {isEditing ? (
                       <>
-                        <Button size="sm" onClick={handleSave}>
-                          <Save className="h-4 w-4 mr-2" />
-                          Save
+                        <Button size="sm" onClick={handleSave} disabled={saving}>
+                          {saving ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Save className="h-4 w-4 mr-2" />
+                          )}
+                          {saving ? 'Saving...' : 'Save'}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={handleCancel}>
+                        <Button size="sm" variant="outline" onClick={handleCancel} disabled={saving}>
                           <X className="h-4 w-4 mr-2" />
                           Cancel
                         </Button>

@@ -123,46 +123,16 @@ export default function DashboardPage() {
               <CardDescription>Your latest bus bookings</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <Bus className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Mumbai to Delhi</p>
-                      <p className="text-sm text-muted-foreground">RedBus Express • AC Sleeper</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">₹1,200</p>
-                    <p className="text-sm text-muted-foreground">Dec 15, 2024</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <Bus className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Bangalore to Chennai</p>
-                      <p className="text-sm text-muted-foreground">Orange Tours • Non-AC Seater</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">₹800</p>
-                    <p className="text-sm text-muted-foreground">Dec 10, 2024</p>
-                  </div>
-                </div>
+              <div className="text-center py-8">
+                <Bus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No recent bookings</p>
+                <p className="text-sm text-muted-foreground">Booking system coming soon</p>
               </div>
               
               <div className="mt-4">
-                <Link href="/bookings">
-                  <Button variant="outline" className="w-full">
-                    View All Bookings
-                  </Button>
-                </Link>
+                <Button variant="outline" className="w-full" disabled>
+                  View All Bookings (Coming Soon)
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { 
@@ -11,117 +12,153 @@ import {
   Users,
   DollarSign,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Building2
 } from 'lucide-react'
 
+interface DashboardStats {
+  totalBuses: number
+  activeRoutes: number
+  todaysTrips: number
+  totalBookings: number
+  revenue: number
+  occupancyRate: number
+  totalOrganizations: number
+}
+
+interface RecentBooking {
+  id: string
+  customer: string
+  route: string
+  bus: string
+  amount: string
+  status: string
+  time: string
+}
+
+interface UpcomingTrip {
+  id: string
+  route: string
+  bus: string
+  departure: string
+  driver: string
+  status: string
+}
+
 export function AdminDashboard() {
-  const stats = [
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([])
+  const [upcomingTrips, setUpcomingTrips] = useState<UpcomingTrip[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [statsRes, bookingsRes, tripsRes] = await Promise.all([
+          fetch('/api/dashboard/stats'),
+          fetch('/api/dashboard/recent-bookings'),
+          fetch('/api/dashboard/upcoming-trips')
+        ])
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json()
+          setStats(statsData)
+        }
+
+        if (bookingsRes.ok) {
+          const bookingsData = await bookingsRes.json()
+          setRecentBookings(bookingsData)
+        }
+
+        if (tripsRes.ok) {
+          const tripsData = await tripsRes.json()
+          setUpcomingTrips(tripsData)
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  const statsConfig = stats ? [
     {
-      title: 'Total Buses',
-      value: '24',
-      change: '+2 this month',
+      title: 'Total Bus Types',
+      value: stats.totalBuses.toString(),
+      change: 'Configured',
       icon: Bus,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
     },
     {
       title: 'Active Routes',
-      value: '12',
-      change: '+1 this week',
+      value: stats.activeRoutes.toString(),
+      change: 'Configured',
       icon: Route,
       color: 'text-green-600',
       bgColor: 'bg-green-100'
     },
     {
-      title: 'Today\'s Trips',
-      value: '18',
-      change: '3 completed',
-      icon: Calendar,
+      title: 'Organizations',
+      value: stats.totalOrganizations.toString(),
+      change: 'Active',
+      icon: Building2,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
     },
     {
-      title: 'Total Bookings',
-      value: '1,247',
-      change: '+15% from last month',
-      icon: BookOpen,
+      title: 'Today\'s Trips',
+      value: stats.todaysTrips.toString(),
+      change: 'Coming soon',
+      icon: Calendar,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100'
     },
     {
-      title: 'Revenue',
-      value: '₹2,45,600',
-      change: '+8% from last month',
-      icon: DollarSign,
+      title: 'Total Bookings',
+      value: stats.totalBookings.toString(),
+      change: 'Coming soon',
+      icon: BookOpen,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100'
     },
     {
-      title: 'Occupancy Rate',
-      value: '78%',
-      change: '+5% from last week',
-      icon: TrendingUp,
+      title: 'Revenue',
+      value: `₹${stats.revenue.toLocaleString()}`,
+      change: 'Coming soon',
+      icon: DollarSign,
       color: 'text-indigo-600',
       bgColor: 'bg-indigo-100'
     }
-  ]
+  ] : []
 
-  const recentBookings = [
-    {
-      id: 'RW001234',
-      customer: 'John Doe',
-      route: 'Mumbai → Delhi',
-      bus: 'RedBus Express',
-      amount: '₹1,200',
-      status: 'confirmed',
-      time: '2 hours ago'
-    },
-    {
-      id: 'RW001235',
-      customer: 'Jane Smith',
-      route: 'Bangalore → Chennai',
-      bus: 'Orange Tours',
-      amount: '₹800',
-      status: 'pending',
-      time: '3 hours ago'
-    },
-    {
-      id: 'RW001236',
-      customer: 'Mike Johnson',
-      route: 'Delhi → Jaipur',
-      bus: 'Blue Line',
-      amount: '₹600',
-      status: 'confirmed',
-      time: '4 hours ago'
-    }
-  ]
-
-  const upcomingTrips = [
-    {
-      id: 'T001',
-      route: 'Mumbai → Delhi',
-      bus: 'RedBus Express (MH-01-AB-1234)',
-      departure: '22:30',
-      driver: 'Rajesh Kumar',
-      status: 'scheduled'
-    },
-    {
-      id: 'T002',
-      route: 'Bangalore → Chennai',
-      bus: 'Orange Tours (KA-02-CD-5678)',
-      departure: '23:00',
-      driver: 'Suresh Patel',
-      status: 'boarding'
-    },
-    {
-      id: 'T003',
-      route: 'Delhi → Jaipur',
-      bus: 'Blue Line (DL-03-EF-9012)',
-      departure: '06:00',
-      driver: 'Amit Singh',
-      status: 'scheduled'
-    }
-  ]
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Loading dashboard data...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, index) => (
+            <Card key={index}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-muted animate-pulse rounded mb-2" />
+                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -135,7 +172,7 @@ export function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {stats.map((stat, index) => {
+        {statsConfig.map((stat, index) => {
           const Icon = stat.icon
           return (
             <Card key={index}>
@@ -172,33 +209,41 @@ export function AdminDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentBookings.map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{booking.id}</span>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        booking.status === 'confirmed' 
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {booking.status}
-                      </span>
+            {recentBookings.length > 0 ? (
+              <div className="space-y-4">
+                {recentBookings.map((booking) => (
+                  <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{booking.id}</span>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          booking.status === 'confirmed' 
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {booking.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{booking.customer}</p>
+                      <p className="text-sm">{booking.route} • {booking.bus}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">{booking.customer}</p>
-                    <p className="text-sm">{booking.route} • {booking.bus}</p>
+                    <div className="text-right">
+                      <p className="font-medium">{booking.amount}</p>
+                      <p className="text-xs text-muted-foreground">{booking.time}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">{booking.amount}</p>
-                    <p className="text-xs text-muted-foreground">{booking.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No bookings yet</p>
+                <p className="text-sm text-muted-foreground">Booking system coming soon</p>
+              </div>
+            )}
             <div className="mt-4">
-              <Button variant="outline" className="w-full">
-                View All Bookings
+              <Button variant="outline" className="w-full" disabled>
+                View All Bookings (Coming Soon)
               </Button>
             </div>
           </CardContent>
@@ -216,34 +261,42 @@ export function AdminDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {upcomingTrips.map((trip) => (
-                <div key={trip.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{trip.id}</span>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        trip.status === 'boarding' 
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {trip.status}
-                      </span>
+            {upcomingTrips.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingTrips.map((trip) => (
+                  <div key={trip.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{trip.id}</span>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          trip.status === 'boarding' 
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {trip.status}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium">{trip.route}</p>
+                      <p className="text-sm text-muted-foreground">{trip.bus}</p>
+                      <p className="text-sm text-muted-foreground">Driver: {trip.driver}</p>
                     </div>
-                    <p className="text-sm font-medium">{trip.route}</p>
-                    <p className="text-sm text-muted-foreground">{trip.bus}</p>
-                    <p className="text-sm text-muted-foreground">Driver: {trip.driver}</p>
+                    <div className="text-right">
+                      <p className="text-lg font-bold">{trip.departure}</p>
+                      <p className="text-xs text-muted-foreground">Departure</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">{trip.departure}</p>
-                    <p className="text-xs text-muted-foreground">Departure</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No trips scheduled</p>
+                <p className="text-sm text-muted-foreground">Trip management coming soon</p>
+              </div>
+            )}
             <div className="mt-4">
-              <Button variant="outline" className="w-full">
-                View All Trips
+              <Button variant="outline" className="w-full" disabled>
+                View All Trips (Coming Soon)
               </Button>
             </div>
           </CardContent>
