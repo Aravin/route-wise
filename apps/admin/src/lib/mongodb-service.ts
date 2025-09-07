@@ -440,6 +440,16 @@ class MongoDBService {
     const routes = await getRoutesCollection()
     await routes.deleteOne({ _id: id })
   }
+
+  async deleteBusTypesByOrganizationId(organizationId: ObjectId): Promise<void> {
+    const busTypes = await getBusTypesCollection()
+    await busTypes.deleteMany({ organizationId })
+  }
+
+  async deleteRoutesByOrganizationId(organizationId: ObjectId): Promise<void> {
+    const routes = await getRoutesCollection()
+    await routes.deleteMany({ organizationId })
+  }
 }
 
 // Export singleton instance

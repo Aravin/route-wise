@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { organization, business, isComplete, userEmail } = body
+    const { organization, isComplete, userEmail } = body
 
     // Save organization if provided
     let organizationId
@@ -24,57 +24,23 @@ export async function POST(request: NextRequest) {
       organizationId = org._id
     }
 
-    // Save onboarding data
-    const onboardingData = await mongoDBService.saveOnboardingData({
-      userId: user.userId,
-      organization,
-      business,
-      isComplete
-    })
-
-    // Save business data to separate collections if provided
-    if (organizationId && business) {
-      if (business.busTypes?.length > 0) {
-        for (const busType of business.busTypes) {
-          await mongoDBService.createBusType({
-            userId: user.userId,
-            organizationId: organizationId,
-            name: busType.name,
-            acType: busType.acType,
-            seatingType: busType.seatingType,
-            capacity: busType.capacity,
-            lowerSeaterPrice: busType.lowerSeaterPrice,
-            upperSeaterPrice: busType.upperSeaterPrice,
-            lowerSleeperPrice: busType.lowerSleeperPrice,
-            upperSleeperPrice: busType.upperSleeperPrice,
-            amenities: busType.amenities
-          })
-        }
-      }
-      if (business.routes?.length > 0) {
-        for (const route of business.routes) {
-          await mongoDBService.createRoute({
-            userId: user.userId,
-            organizationId: organizationId,
-            name: route.name,
-            from: route.from,
-            to: route.to,
-            distance: route.distance,
-            duration: route.duration,
-            description: route.description
-          })
-        }
-      }
-    }
+    // Organization is already saved above
 
     // Update user's onboarding status
-    if (isComplete) {
-      await mongoDBService.updateUserOnboardingStatus(user.userId, true)
+    if (isComplete !== undefined) {
+      await mongoDBService.updateUserOnboardingStatus(user.userId, isComplete)
     }
 
-    console.log('Saved onboarding data:', onboardingData)
+    // Create response data structure
+    const responseData = {
+      userId: user.userId,
+      organization,
+      isComplete: isComplete || false
+    }
 
-    return NextResponse.json(onboardingData)
+    console.log('Saved onboarding data:', responseData)
+
+    return NextResponse.json(responseData)
 
   } catch (error) {
     console.error('Error saving onboarding data:', error)

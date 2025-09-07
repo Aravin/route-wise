@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, ArrowRight, ArrowLeft, Building2, Bus, Route, Users, Wrench } from 'lucide-react'
-import { OrganizationSetup, BusinessSetup, OnboardingComplete } from './index'
+import { OrganizationSetup, OnboardingComplete } from './index'
 
-interface OnboardingData {
+export interface OnboardingData {
   userId: string
   userEmail?: string
   organization: {
@@ -15,36 +15,11 @@ interface OnboardingData {
     address: string
     regOffice?: string
     phone: string
-    phone2: string
+    phone2?: string
     email: string
     website?: string
     gstNumber?: string
     panNumber?: string
-  }
-  business: {
-    busTypes: Array<{
-      id: string
-      name: string
-      acType: 'AC' | 'NON_AC'
-      seatingType: 'SEATER' | 'SLEEPER' | 'SEATER_SLEEPER'
-      capacity: number
-      amenities: ('WIFI' | 'WATER_BOTTLE' | 'BLANKETS' | 'CHARGING_POINT' | 'TOILET' | 'BED_SHEET' | 'TV' | 'USB_PORT' | 'TYPE_C_PORT')[]
-      pricing: {
-        lowerSeaterPrice: number
-        upperSeaterPrice: number
-        lowerSleeperPrice: number
-        upperSleeperPrice: number
-      }
-    }>
-    routes: Array<{
-      id: string
-      name: string
-      from: string
-      to: string
-      distance: number
-      duration: number
-      stops: string[]
-    }>
   }
   isComplete: boolean
 }
@@ -52,20 +27,13 @@ interface OnboardingData {
 const steps = [
   {
     id: 1,
-    title: 'Business Setup',
-    description: 'Set up your business details',
+    title: 'Organization Setup',
+    description: 'Set up your organization details',
     icon: Building2,
     component: OrganizationSetup
   },
   {
     id: 2,
-    title: 'Fleet Configuration',
-    description: 'Configure bus types and routes',
-    icon: Bus,
-    component: BusinessSetup
-  },
-  {
-    id: 3,
     title: 'Complete',
     description: 'Onboarding completed successfully',
     icon: CheckCircle,
@@ -103,10 +71,6 @@ export function OnboardingFlow() {
           phone: '',
           phone2: '',
           email: data.userEmail || 'admin@routewise.com'
-        },
-        business: {
-          busTypes: [],
-          routes: []
         },
         isComplete: false
       })

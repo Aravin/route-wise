@@ -13,10 +13,10 @@ export default async function AdminHomePage() {
   }
 
   try {
-    // Check onboarding status directly from database
-    const onboardingData = await mongoDBService.getOnboardingDataByUserId(userIdCookie.value)
-    
-    if (onboardingData?.isComplete) {
+    // Check onboarding status from user document
+    const user = await mongoDBService.getUserByUserId(userIdCookie.value)
+
+    if (user?.onboardingComplete) {
       redirect('/dashboard')
     } else {
       redirect('/onboarding')

@@ -2,9 +2,8 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle, ArrowRight, Bus, Route } from 'lucide-react'
+import { CheckCircle, ArrowRight, Bus, Building2, MapPin, Phone, Mail } from 'lucide-react'
 import { OnboardingData } from './onboarding-flow'
-import { getAmenityLabel, getAmenityIcon } from '@/lib/bus-types'
 
 interface OnboardingCompleteProps {
   data: OnboardingData
@@ -21,19 +20,13 @@ export function OnboardingComplete({ data, onNext }: OnboardingCompleteProps) {
     onNext({ isComplete: true })
   }
 
-  const stats = [
+  const organizationStats = [
     {
-      label: 'Bus Types',
-      value: data.business.busTypes.length,
+      label: 'Organization',
+      value: data.organization.name || 'Not set',
       icon: Bus,
       color: 'text-blue-600',
-      details: data.business.busTypes.map(bt => `${bt.acType} ${bt.seatingType}`).join(', ')
-    },
-    {
-      label: 'Routes',
-      value: data.business.routes.length,
-      icon: Route,
-      color: 'text-green-600'
+      details: `Address: ${data.organization.address}`
     }
   ]
 
@@ -92,9 +85,8 @@ export function OnboardingComplete({ data, onNext }: OnboardingCompleteProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {data.business.busTypes.length > 0 || data.business.routes.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-              {stats.map((stat, index) => {
+          <div className="grid grid-cols-1 gap-4">
+            {organizationStats.map((stat, index) => {
                 const Icon = stat.icon
                 return (
                   <div key={index} className="text-center">
@@ -122,62 +114,49 @@ export function OnboardingComplete({ data, onNext }: OnboardingCompleteProps) {
         </CardContent>
       </Card>
 
-      {/* Bus Types Details */}
-      {data.business.busTypes.length > 0 && (
+      {/* Organization Details */}
+      {data.organization.name && (
         <Card>
           <CardHeader>
-            <CardTitle>Configured Bus Types</CardTitle>
+            <CardTitle>Organization Details</CardTitle>
             <CardDescription>
-              Details of your bus type configurations
+              Your registered organization information
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {data.business.busTypes.map((busType, index) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold">{busType.name}</h4>
-                    <span className="text-sm text-muted-foreground">
-                      {busType.acType} {busType.seatingType}
-                    </span>
-                  </div>
-                  <div className="text-sm text-muted-foreground mb-2">
-                    Capacity: {busType.capacity} seats
-                    {busType.seatingType === 'SEATER' && (
-                      <div className="mt-1 text-xs">
-                        Lower: ₹{busType.pricing.lowerSeaterPrice} • Upper: ₹{busType.pricing.upperSeaterPrice}
-                      </div>
-                    )}
-                    {busType.seatingType === 'SLEEPER' && (
-                      <div className="mt-1 text-xs">
-                        Lower: ₹{busType.pricing.lowerSleeperPrice} • Upper: ₹{busType.pricing.upperSleeperPrice}
-                      </div>
-                    )}
-                    {busType.seatingType === 'SEATER_SLEEPER' && (
-                      <div className="mt-1 text-xs">
-                        <div>Lower Seater: ₹{busType.pricing.lowerSeaterPrice} • Upper Seater: ₹{busType.pricing.upperSeaterPrice}</div>
-                        <div>Lower Sleeper: ₹{busType.pricing.lowerSleeperPrice} • Upper Sleeper: ₹{busType.pricing.upperSleeperPrice}</div>
-                      </div>
-                    )}
-                  </div>
-                  {busType.amenities.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium mb-1">Amenities:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {busType.amenities.map((amenity, amenityIndex) => (
-                          <span
-                            key={amenityIndex}
-                            className="inline-flex items-center space-x-1 bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"
-                          >
-                            <span>{getAmenityIcon(amenity)}</span>
-                            <span>{getAmenityLabel(amenity)}</span>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <Building2 className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{data.organization.name}</p>
+                  <p className="text-sm text-muted-foreground">Organization Name</p>
                 </div>
-              ))}
+              </div>
+              <div className="flex items-center space-x-3">
+                <MapPin className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{data.organization.address}</p>
+                  <p className="text-sm text-muted-foreground">Business Address</p>
+                </div>
+              </div>
+              {data.organization.phone && (
+                <div className="flex items-center space-x-3">
+                  <Phone className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{data.organization.phone}</p>
+                    <p className="text-sm text-muted-foreground">Phone Number</p>
+                  </div>
+                </div>
+              )}
+              {data.organization.email && (
+                <div className="flex items-center space-x-3">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{data.organization.email}</p>
+                    <p className="text-sm text-muted-foreground">Email Address</p>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

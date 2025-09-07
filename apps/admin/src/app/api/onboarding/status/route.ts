@@ -11,36 +11,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get onboarding data
-    let onboardingData = await mongoDBService.getOnboardingDataByUserId(user.userId)
-    
-    if (!onboardingData) {
-      // Create default onboarding data
-      onboardingData = await mongoDBService.saveOnboardingData({
+    // Get user with onboarding status
+    const userData = await mongoDBService.getUserByUserId(user.userId)
+
+    // Get organization if exists
+    const organizations = await mongoDBService.getOrganizationsByUserId(user.userId)
+    const organization = organizations.length > 0 ? organizations[0] : null
+
+    // Create onboarding data structure
+    const onboardingData = {
+      userId: user.userId,
+      organization: organization ? {
+        userId: organization.userId,
+        name: organization.name,
+        address: organization.address,
+        regOffice: organization.regOffice,
+        phone: organization.phone,
+        phone2: organization.phone2,
+        email: organization.email,
+        website: organization.website,
+        gstNumber: organization.gstNumber,
+        panNumber: organization.panNumber
+      } : {
         userId: user.userId,
-        organization: {
-          userId: user.userId,
-          name: '',
-          address: '',
-          regOffice: '',
-          phone: '',
-          email: '',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        business: {
-          busTypes: [],
-          routes: []
-        },
-        isComplete: false
-      })
+        name: '',
+        address: '',
+        regOffice: '',
+        phone: '',
+        email: '',
+        phone2: ''
+      },
+      isComplete: userData?.onboardingComplete || false
     }
 
     return NextResponse.json({
       userId: user.userId,
       userEmail: user.email,
       onboardingData,
-      isComplete: onboardingData.isComplete
+      isComplete: userData?.onboardingComplete || false
     })
 
   } catch (error) {
