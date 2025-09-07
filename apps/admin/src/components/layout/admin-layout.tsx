@@ -19,8 +19,11 @@ import {
   ChevronRight,
   User,
   Bell,
-  Settings
+  Settings,
+  Sun,
+  Moon
 } from 'lucide-react'
+import { useTheme } from 'next-themes'
 
 const navigation = [
   {
@@ -63,11 +66,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     return false
   })
   const [showUserDropdown, setShowUserDropdown] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const { theme, setTheme, resolvedTheme } = useTheme()
 
   const user = { name: 'Admin User', email: 'admin@routewise.com' }
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
 
   const handleLogout = async () => {
     try {
@@ -87,6 +97,20 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     const newState = !sidebarCollapsed
     setSidebarCollapsed(newState)
     localStorage.setItem('sidebarCollapsed', newState.toString())
+  }
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }
+
+  const getThemeIcon = () => {
+    if (!mounted) return <Sun className="h-4 w-4" />
+    return theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />
+  }
+
+  const getThemeLabel = () => {
+    if (!mounted) return 'Toggle theme'
+    return theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
   }
 
   useEffect(() => {
@@ -294,6 +318,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
               {/* Right side actions */}
               <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleTheme}
+                  className="h-9 w-9 p-0"
+                  title={getThemeLabel()}
+                >
+                  {getThemeIcon()}
+                </Button>
                 <Button variant="ghost" size="sm">
                   <Bell className="h-4 w-4" />
                 </Button>

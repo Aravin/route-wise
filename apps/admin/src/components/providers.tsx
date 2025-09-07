@@ -29,6 +29,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultTheme="system"
         enableSystem
         disableTransitionOnChange
+        attribute="class"
+        storageKey="routewise-theme"
       >
         {children}
       </ThemeProvider>
