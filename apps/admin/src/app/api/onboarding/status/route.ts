@@ -18,6 +18,9 @@ export async function GET(request: NextRequest) {
     const organizations = await mongoDBService.getOrganizationsByUserId(user.userId)
     const organization = organizations.length > 0 ? organizations[0] : null
 
+    // Get onboarding progress
+    const progress = await mongoDBService.getOnboardingProgress(user.userId)
+
     // Create onboarding data structure
     const onboardingData = {
       userId: user.userId,
@@ -48,7 +51,15 @@ export async function GET(request: NextRequest) {
       userId: user.userId,
       userEmail: user.email,
       onboardingData,
-      isComplete: userData?.onboardingComplete || false
+      isComplete: userData?.onboardingComplete || false,
+      progress: progress || {
+        organizationCreated: false,
+        busTypeCreated: false,
+        routeCreated: false,
+        isComplete: false,
+        completedSteps: 0,
+        totalSteps: 3
+      }
     })
 
   } catch (error) {

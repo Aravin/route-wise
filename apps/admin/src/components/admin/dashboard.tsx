@@ -6,58 +6,40 @@ import { Button } from '@/components/ui/button'
 import { 
   Bus, 
   Route, 
-  Calendar, 
-  BookOpen, 
-  TrendingUp, 
+  Calendar,
   Users,
-  DollarSign,
-  Clock,
-  AlertCircle,
-  Building2
+  Building2,
+  CheckCircle,
+  Circle
 } from 'lucide-react'
 
 interface DashboardStats {
   totalBuses: number
   activeRoutes: number
-  todaysTrips: number
-  totalBookings: number
-  revenue: number
-  occupancyRate: number
   totalOrganizations: number
 }
 
-interface RecentBooking {
-  id: string
-  customer: string
-  route: string
-  bus: string
-  amount: string
-  status: string
-  time: string
-}
 
-interface UpcomingTrip {
-  id: string
-  route: string
-  bus: string
-  departure: string
-  driver: string
-  status: string
+interface OnboardingProgress {
+  organizationCreated: boolean
+  busTypeCreated: boolean
+  routeCreated: boolean
+  isComplete: boolean
+  completedSteps: number
+  totalSteps: number
 }
 
 export function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([])
-  const [upcomingTrips, setUpcomingTrips] = useState<UpcomingTrip[]>([])
+  const [onboardingProgress, setOnboardingProgress] = useState<OnboardingProgress | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [statsRes, bookingsRes, tripsRes] = await Promise.all([
+        const [statsRes, progressRes] = await Promise.all([
           fetch('/api/dashboard/stats'),
-          fetch('/api/dashboard/recent-bookings'),
-          fetch('/api/dashboard/upcoming-trips')
+          fetch('/api/onboarding/progress')
         ])
 
         if (statsRes.ok) {
@@ -65,14 +47,9 @@ export function AdminDashboard() {
           setStats(statsData)
         }
 
-        if (bookingsRes.ok) {
-          const bookingsData = await bookingsRes.json()
-          setRecentBookings(bookingsData)
-        }
-
-        if (tripsRes.ok) {
-          const tripsData = await tripsRes.json()
-          setUpcomingTrips(tripsData)
+        if (progressRes.ok) {
+          const progressData = await progressRes.json()
+          setOnboardingProgress(progressData)
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
@@ -108,30 +85,6 @@ export function AdminDashboard() {
       icon: Building2,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100'
-    },
-    {
-      title: 'Today\'s Trips',
-      value: stats.todaysTrips.toString(),
-      change: 'Coming soon',
-      icon: Calendar,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100'
-    },
-    {
-      title: 'Total Bookings',
-      value: stats.totalBookings.toString(),
-      change: 'Coming soon',
-      icon: BookOpen,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-100'
-    },
-    {
-      title: 'Revenue',
-      value: `₹${stats.revenue.toLocaleString()}`,
-      change: 'Coming soon',
-      icon: DollarSign,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-100'
     }
   ] : []
 
@@ -143,7 +96,7 @@ export function AdminDashboard() {
           <p className="text-muted-foreground">Loading dashboard data...</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, index) => (
+          {[...Array(3)].map((_, index) => (
             <Card key={index}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="h-4 w-20 bg-muted animate-pulse rounded" />
@@ -170,6 +123,104 @@ export function AdminDashboard() {
         </p>
       </div>
 
+      {/* Onboarding Progress */}
+      {onboardingProgress && !onboardingProgress.isComplete && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Building2 className="h-5 w-5 text-blue-600" />
+              <span>Complete Your Setup</span>
+            </CardTitle>
+            <CardDescription>
+              Finish setting up your account to unlock all features
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Progress Bar */}
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(onboardingProgress.completedSteps / onboardingProgress.totalSteps) * 100}%` }}
+                />
+              </div>
+              
+              {/* Steps */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  {onboardingProgress.organizationCreated ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-gray-400" />
+                  )}
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${onboardingProgress.organizationCreated ? 'text-green-700' : 'text-gray-700'}`}>
+                      Create your organization
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Set up your company details and contact information
+                    </p>
+                  </div>
+                  {!onboardingProgress.organizationCreated && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href="/organizations">Complete</a>
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  {onboardingProgress.busTypeCreated ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-gray-400" />
+                  )}
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${onboardingProgress.busTypeCreated ? 'text-green-700' : 'text-gray-700'}`}>
+                      Add at least one bus type
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Configure your bus types with seating and pricing
+                    </p>
+                  </div>
+                  {!onboardingProgress.busTypeCreated && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href="/bus-types">Complete</a>
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  {onboardingProgress.routeCreated ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-gray-400" />
+                  )}
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${onboardingProgress.routeCreated ? 'text-green-700' : 'text-gray-700'}`}>
+                      Create at least one route
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Set up your travel routes and destinations
+                    </p>
+                  </div>
+                  {!onboardingProgress.routeCreated && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href="/routes">Complete</a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 text-center">
+                <p className="text-sm text-gray-600">
+                  {onboardingProgress.completedSteps} of {onboardingProgress.totalSteps} steps completed
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statsConfig.map((stat, index) => {
@@ -195,113 +246,6 @@ export function AdminDashboard() {
         })}
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Bookings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <BookOpen className="h-5 w-5" />
-              <span>Recent Bookings</span>
-            </CardTitle>
-            <CardDescription>
-              Latest customer bookings and their status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentBookings.length > 0 ? (
-              <div className="space-y-4">
-                {recentBookings.map((booking) => (
-                  <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{booking.id}</span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          booking.status === 'confirmed' 
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {booking.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{booking.customer}</p>
-                      <p className="text-sm">{booking.route} • {booking.bus}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">{booking.amount}</p>
-                      <p className="text-xs text-muted-foreground">{booking.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No bookings yet</p>
-                <p className="text-sm text-muted-foreground">Booking system coming soon</p>
-              </div>
-            )}
-            <div className="mt-4">
-              <Button variant="outline" className="w-full" disabled>
-                View All Bookings (Coming Soon)
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Trips */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5" />
-              <span>Upcoming Trips</span>
-            </CardTitle>
-            <CardDescription>
-              Today's scheduled trips and their status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {upcomingTrips.length > 0 ? (
-              <div className="space-y-4">
-                {upcomingTrips.map((trip) => (
-                  <div key={trip.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{trip.id}</span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          trip.status === 'boarding' 
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {trip.status}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium">{trip.route}</p>
-                      <p className="text-sm text-muted-foreground">{trip.bus}</p>
-                      <p className="text-sm text-muted-foreground">Driver: {trip.driver}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold">{trip.departure}</p>
-                      <p className="text-xs text-muted-foreground">Departure</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No trips scheduled</p>
-                <p className="text-sm text-muted-foreground">Trip management coming soon</p>
-              </div>
-            )}
-            <div className="mt-4">
-              <Button variant="outline" className="w-full" disabled>
-                View All Trips (Coming Soon)
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Quick Actions */}
       <Card>

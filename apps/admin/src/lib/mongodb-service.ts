@@ -15,6 +15,11 @@ export interface User {
   name: string
   organizationId?: ObjectId
   onboardingComplete: boolean
+  onboardingSteps: {
+    organizationCreated: boolean
+    busTypeCreated: boolean
+    routeCreated: boolean
+  }
   createdAt: Date
   updatedAt: Date
 }
@@ -103,6 +108,11 @@ class MongoDBService {
       email: userData.email || '',
       name: userData.name || '',
       onboardingComplete: false,
+      onboardingSteps: {
+        organizationCreated: false,
+        busTypeCreated: false,
+        routeCreated: false
+      },
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -128,6 +138,53 @@ class MongoDBService {
         }
       }
     )
+  }
+
+  async updateOnboardingStep(userId: string, step: keyof User['onboardingSteps']): Promise<void> {
+    const users = await getUsersCollection()
+    await users.updateOne(
+      { userId },
+      { 
+        $set: { 
+          [`onboardingSteps.${step}`]: true,
+          updatedAt: new Date()
+        }
+      }
+    )
+
+    // Check if all steps are complete and update onboardingComplete
+    const user = await this.getUserByUserId(userId)
+    if (user && user.onboardingSteps) {
+      const allStepsComplete = Object.values(user.onboardingSteps).every(step => step === true)
+      if (allStepsComplete && !user.onboardingComplete) {
+        await this.updateUserOnboardingStatus(userId, true)
+      }
+    }
+  }
+
+  async getOnboardingProgress(userId: string): Promise<{
+    organizationCreated: boolean
+    busTypeCreated: boolean
+    routeCreated: boolean
+    isComplete: boolean
+    completedSteps: number
+    totalSteps: number
+  } | null> {
+    const user = await this.getUserByUserId(userId)
+    if (!user || !user.onboardingSteps) {
+      return null
+    }
+
+    const steps = user.onboardingSteps
+    const completedSteps = Object.values(steps).filter(step => step === true).length
+    const totalSteps = Object.keys(steps).length
+
+    return {
+      ...steps,
+      isComplete: user.onboardingComplete,
+      completedSteps,
+      totalSteps
+    }
   }
 
   async updateUser(userId: string, updateData: Partial<User>): Promise<User | null> {
@@ -173,7 +230,12 @@ class MongoDBService {
     }
     
     const result = await organizations.insertOne(organization)
-    return { ...organization, _id: result.insertedId }
+    const createdOrg = { ...organization, _id: result.insertedId }
+    
+    // Update onboarding step for organization creation
+    await this.updateOnboardingStep(orgData.userId || '', 'organizationCreated')
+    
+    return createdOrg
   }
 
   async getOrganizationByUserId(userId: string): Promise<Organization | null> {
@@ -358,7 +420,12 @@ class MongoDBService {
     }
     
     const result = await busTypes.insertOne(busType)
-    return { ...busType, _id: result.insertedId }
+    const createdBusType = { ...busType, _id: result.insertedId }
+    
+    // Update onboarding step for bus type creation
+    await this.updateOnboardingStep(busTypeData.userId || '', 'busTypeCreated')
+    
+    return createdBusType
   }
 
   async getBusTypesByUserId(userId: string): Promise<BusType[]> {
@@ -415,7 +482,12 @@ class MongoDBService {
     }
     
     const result = await routes.insertOne(route)
-    return { ...route, _id: result.insertedId }
+    const createdRoute = { ...route, _id: result.insertedId }
+    
+    // Update onboarding step for route creation
+    await this.updateOnboardingStep(routeData.userId || '', 'routeCreated')
+    
+    return createdRoute
   }
 
   async getRoutesByUserId(userId: string): Promise<Route[]> {

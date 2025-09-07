@@ -30,14 +30,9 @@ export async function GET(request: NextRequest) {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
-    // Mock data for now - replace with actual booking/trip data when available
     const stats = {
       totalBuses: totalBusTypes.length,
       activeRoutes: totalRoutes.length,
-      todaysTrips: 0, // Will be implemented when trip management is added
-      totalBookings: 0, // Will be implemented when booking system is added
-      revenue: 0, // Will be implemented when booking system is added
-      occupancyRate: 0, // Will be implemented when trip management is added
       totalOrganizations: totalOrganizations.length
     }
 
