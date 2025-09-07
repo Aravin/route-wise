@@ -1,9 +1,9 @@
 {
-  "name": "@route-wise/web",
+  "name": "@route-wise/admin",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3010",
+    "dev": "next dev -p 3020",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

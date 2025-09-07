@@ -74,13 +74,10 @@ export function Header() {
           ) : (
             <div className="flex items-center space-x-2">
               <Link href="/auth/login">
-                <Button variant="ghost" size="sm">
+                <Button size="sm">
                   <LogIn className="h-4 w-4 mr-2" />
                   Login
                 </Button>
-              </Link>
-              <Link href="/auth/register">
-                <Button size="sm">Sign Up</Button>
               </Link>
             </div>
           )}
@@ -141,13 +138,10 @@ export function Header() {
                 ) : (
                   <div className="flex flex-col space-y-2">
                     <Link href="/auth/login" onClick={() => setIsOpen(false)}>
-                      <Button variant="ghost" className="w-full justify-start">
+                      <Button className="w-full">
                         <LogIn className="h-4 w-4 mr-2" />
                         Login
                       </Button>
-                    </Link>
-                    <Link href="/auth/register" onClick={() => setIsOpen(false)}>
-                      <Button className="w-full">Sign Up</Button>
                     </Link>
                   </div>
                 )}

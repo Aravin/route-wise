@@ -39,10 +39,10 @@ services:
     container_name: routewise-api
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "3000:3000"
     environment:
       NODE_ENV: production
-      PORT: 5000
+      PORT: 3000
       MONGODB_URI: mongodb://admin:password123@mongodb:27017/routewise?authSource=admin
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
@@ -56,7 +56,7 @@ services:
     networks:
       - routewise-network
 
-  # Frontend Web App
+  # Frontend Web App (B2C - Customers)
   web:
     build:
       context: ./apps/web
@@ -64,11 +64,30 @@ services:
     container_name: routewise-web
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3010:3000"
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: http://localhost:5000
-      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3010
+      NEXTAUTH_SECRET: your-nextauth-secret-key-change-this-in-production
+    depends_on:
+      - api
+    networks:
+      - routewise-network
+
+  # Admin App (B2B - Operators)
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+    container_name: routewise-admin
+    restart: unless-stopped
+    ports:
+      - "3020:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3020
       NEXTAUTH_SECRET: your-nextauth-secret-key-change-this-in-production
     depends_on:
       - api
@@ -88,6 +107,7 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - web
+      - admin
       - api
     networks:
       - routewise-network

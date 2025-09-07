@@ -41,9 +41,9 @@ RUN mkdir -p uploads && chown -R nodejs:nodejs uploads
 USER nodejs
 
 # Expose port
-EXPOSE 5000
+EXPOSE 3000
 
-ENV PORT=5000
+ENV PORT=3000
 
 # Start the application
 CMD ["node", "dist/index.js"]

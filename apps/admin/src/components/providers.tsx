@@ -33,7 +33,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        <AuthProvider config={{ enableRegister: true }}>
+        <AuthProvider config={{ enableRegister: false }}>
           {children}
         </AuthProvider>
         <ReactQueryDevtools initialIsOpen={false} />
