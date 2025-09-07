@@ -48,6 +48,12 @@ function RoutesContent() {
 
   useEffect(() => {
     fetchRoutes()
+    
+    // Check if we should open the form from URL parameter
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('openForm') === 'true') {
+      setShowForm(true)
+    }
   }, [])
 
   const fetchRoutes = async () => {

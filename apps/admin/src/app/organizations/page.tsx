@@ -59,6 +59,12 @@ function OrganizationsContent() {
 
   useEffect(() => {
     fetchOrganizations()
+    
+    // Check if we should open the form from URL parameter
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('openForm') === 'true') {
+      setShowForm(true)
+    }
   }, [])
 
   const fetchOrganizations = async () => {

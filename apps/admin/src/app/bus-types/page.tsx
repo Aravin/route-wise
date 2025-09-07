@@ -17,7 +17,11 @@ import {
   DollarSign, 
   Snowflake,
   X,
-  Check
+  Check,
+  User,
+  UserCheck,
+  Lock,
+  Crown
 } from 'lucide-react'
 import { ACType, SeatingType, Amenity } from '@/lib/bus-types'
 
@@ -36,6 +40,292 @@ interface BusType {
   updatedAt: string
 }
 
+// Professional Seat Configuration Component
+function SeatConfiguration({ 
+  configuration, 
+  onUpdate, 
+  lowerPrice, 
+  upperPrice 
+}: { 
+  configuration: any
+  onUpdate: (config: any) => void
+  lowerPrice: number
+  upperPrice: number
+}) {
+  const updateSeatConfig = (deck: 'lowerDeck' | 'upperDeck', type: 'singleSeats' | 'doubleSeats' | 'sleeperBerths', value: number) => {
+    onUpdate({
+      ...configuration,
+      [deck]: {
+        ...configuration[deck],
+        [type]: Math.max(0, value)
+      }
+    })
+  }
+
+  const getTotalSeats = (deck: 'lowerDeck' | 'upperDeck') => {
+    const deckConfig = configuration[deck]
+    return deckConfig.singleSeats + (deckConfig.doubleSeats * 2) + deckConfig.sleeperBerths
+  }
+
+  const renderBusLayout = (deck: 'lowerDeck' | 'upperDeck', deckName: string) => {
+    const deckConfig = configuration[deck]
+    const totalSeats = getTotalSeats(deck)
+    const price = deck === 'lowerDeck' ? lowerPrice : upperPrice
+    
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        {/* Deck Header */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Bus className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{deckName} Deck</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{totalSeats} seats available</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">₹{price}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">per seat</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bus Layout Visualization */}
+        <div className="p-6">
+          {/* Steering Wheel for Lower Deck */}
+          {deck === 'lowerDeck' && (
+            <div className="flex justify-center mb-4">
+              <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-gray-500 dark:border-gray-400 rounded-full"></div>
+              </div>
+            </div>
+          )}
+
+          {/* Seat Layout Grid */}
+          <div className="space-y-4">
+            {/* Single Seats Row */}
+            {deckConfig.singleSeats > 0 && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Single Seats ({deckConfig.singleSeats})</div>
+                <div className="grid grid-cols-6 gap-2">
+                  {Array.from({ length: Math.min(deckConfig.singleSeats, 6) }).map((_, index) => (
+                    <div key={`single-${index}`} className="aspect-square bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                      <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  ))}
+                  {deckConfig.singleSeats > 6 && (
+                    <div className="aspect-square bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center">
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400">+{deckConfig.singleSeats - 6}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Double Seats Row */}
+            {deckConfig.doubleSeats > 0 && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Double Seats ({deckConfig.doubleSeats})</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {Array.from({ length: Math.min(deckConfig.doubleSeats, 3) }).map((_, index) => (
+                    <div key={`double-${index}`} className="aspect-[2/1] bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-600 rounded-lg flex items-center justify-center shadow-sm">
+                      <div className="flex space-x-1">
+                        <User className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <User className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                    </div>
+                  ))}
+                  {deckConfig.doubleSeats > 3 && (
+                    <div className="aspect-[2/1] bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center">
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400">+{deckConfig.doubleSeats - 3}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Sleeper Berths Row */}
+            {deckConfig.sleeperBerths > 0 && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sleeper Berths ({deckConfig.sleeperBerths})</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {Array.from({ length: Math.min(deckConfig.sleeperBerths, 2) }).map((_, index) => (
+                    <div key={`sleeper-${index}`} className="aspect-[2/1] bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-300 dark:border-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                      <Crown className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  ))}
+                  {deckConfig.sleeperBerths > 2 && (
+                    <div className="aspect-[2/1] bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center">
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400">+{deckConfig.sleeperBerths - 2}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Configuration Controls */}
+        <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 border-t border-gray-200 dark:border-gray-600">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Single Seats</Label>
+              <div className="flex items-center space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateSeatConfig(deck, 'singleSeats', deckConfig.singleSeats - 1)}
+                  disabled={deckConfig.singleSeats <= 0}
+                  className="w-8 h-8 p-0"
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  value={deckConfig.singleSeats}
+                  onChange={(e) => updateSeatConfig(deck, 'singleSeats', parseInt(e.target.value) || 0)}
+                  className="w-16 text-center h-8"
+                  min="0"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateSeatConfig(deck, 'singleSeats', deckConfig.singleSeats + 1)}
+                  className="w-8 h-8 p-0"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Double Seats</Label>
+              <div className="flex items-center space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateSeatConfig(deck, 'doubleSeats', deckConfig.doubleSeats - 1)}
+                  disabled={deckConfig.doubleSeats <= 0}
+                  className="w-8 h-8 p-0"
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  value={deckConfig.doubleSeats}
+                  onChange={(e) => updateSeatConfig(deck, 'doubleSeats', parseInt(e.target.value) || 0)}
+                  className="w-16 text-center h-8"
+                  min="0"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateSeatConfig(deck, 'doubleSeats', deckConfig.doubleSeats + 1)}
+                  className="w-8 h-8 p-0"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sleeper Berths</Label>
+              <div className="flex items-center space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateSeatConfig(deck, 'sleeperBerths', deckConfig.sleeperBerths - 1)}
+                  disabled={deckConfig.sleeperBerths <= 0}
+                  className="w-8 h-8 p-0"
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  value={deckConfig.sleeperBerths}
+                  onChange={(e) => updateSeatConfig(deck, 'sleeperBerths', parseInt(e.target.value) || 0)}
+                  className="w-16 text-center h-8"
+                  min="0"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateSeatConfig(deck, 'sleeperBerths', deckConfig.sleeperBerths + 1)}
+                  className="w-8 h-8 p-0"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Bus Seat Configuration</h3>
+        <p className="text-gray-600 dark:text-gray-400">
+          Design your bus layout with different seat types and pricing
+        </p>
+      </div>
+      
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        {renderBusLayout('lowerDeck', 'Lower')}
+        {renderBusLayout('upperDeck', 'Upper')}
+      </div>
+      
+      {/* Professional Legend */}
+      <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
+        <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Seat Type Legend</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-600 rounded-lg flex items-center justify-center">
+              <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <div className="font-medium text-gray-900 dark:text-white">Single Seat</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Individual passenger seat</div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-600 rounded-lg flex items-center justify-center">
+              <div className="flex space-x-1">
+                <User className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <User className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+            <div>
+              <div className="font-medium text-gray-900 dark:text-white">Double Seat</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Side-by-side seating</div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-300 dark:border-purple-600 rounded-lg flex items-center justify-center">
+              <Crown className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <div className="font-medium text-gray-900 dark:text-white">Sleeper Berth</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Premium sleeper accommodation</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function BusTypesContent() {
   const [busTypes, setBusTypes] = useState<BusType[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,11 +341,29 @@ function BusTypesContent() {
     upperSeaterPrice: 0,
     lowerSleeperPrice: 0,
     upperSleeperPrice: 0,
-    amenities: [] as Amenity[]
+    amenities: [] as Amenity[],
+    seatConfiguration: {
+      lowerDeck: {
+        singleSeats: 8,
+        doubleSeats: 20,
+        sleeperBerths: 0
+      },
+      upperDeck: {
+        singleSeats: 18,
+        doubleSeats: 0,
+        sleeperBerths: 0
+      }
+    }
   })
 
   useEffect(() => {
     fetchBusTypes()
+    
+    // Check if we should open the form from URL parameter
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('openForm') === 'true') {
+      setShowForm(true)
+    }
   }, [])
 
   const fetchBusTypes = async () => {
@@ -79,12 +387,26 @@ function BusTypesContent() {
       const url = editingBusType ? `/api/bus-types/${editingBusType._id}` : '/api/bus-types'
       const method = editingBusType ? 'PUT' : 'POST'
       
+      // Calculate total capacity
+      const lowerTotal = formData.seatConfiguration.lowerDeck.singleSeats + 
+                        (formData.seatConfiguration.lowerDeck.doubleSeats * 2) + 
+                        formData.seatConfiguration.lowerDeck.sleeperBerths
+      const upperTotal = formData.seatConfiguration.upperDeck.singleSeats + 
+                        (formData.seatConfiguration.upperDeck.doubleSeats * 2) + 
+                        formData.seatConfiguration.upperDeck.sleeperBerths
+      const totalCapacity = lowerTotal + upperTotal
+      
+      const submitData = {
+        ...formData,
+        capacity: totalCapacity
+      }
+      
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       })
 
       if (response.ok) {
@@ -107,7 +429,19 @@ function BusTypesContent() {
       upperSeaterPrice: busType.upperSeaterPrice,
       lowerSleeperPrice: busType.lowerSleeperPrice,
       upperSleeperPrice: busType.upperSleeperPrice,
-      amenities: busType.amenities
+      amenities: busType.amenities,
+      seatConfiguration: {
+        lowerDeck: {
+          singleSeats: 8,
+          doubleSeats: 20,
+          sleeperBerths: 0
+        },
+        upperDeck: {
+          singleSeats: 18,
+          doubleSeats: 0,
+          sleeperBerths: 0
+        }
+      }
     })
     setShowForm(true)
   }
@@ -138,7 +472,19 @@ function BusTypesContent() {
       upperSeaterPrice: 0,
       lowerSleeperPrice: 0,
       upperSleeperPrice: 0,
-      amenities: []
+      amenities: [],
+      seatConfiguration: {
+        lowerDeck: {
+          singleSeats: 8,
+          doubleSeats: 20,
+          sleeperBerths: 0
+        },
+        upperDeck: {
+          singleSeats: 18,
+          doubleSeats: 0,
+          sleeperBerths: 0
+        }
+      }
     })
     setEditingBusType(null)
     setShowForm(false)
@@ -260,21 +606,31 @@ function BusTypesContent() {
                   </div>
                 </div>
 
-                {/* Capacity */}
+                {/* Capacity - Auto-calculated */}
                 <div className="space-y-2">
-                  <Label htmlFor="capacity">Capacity *</Label>
+                  <Label htmlFor="capacity">Total Capacity</Label>
                   <div className="relative">
                     <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="capacity"
                       type="number"
-                      placeholder="Enter passenger capacity"
-                      className="pl-10"
-                      value={formData.capacity}
-                      onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
-                      required
+                      placeholder="Auto-calculated"
+                      className="pl-10 bg-muted"
+                      value={(() => {
+                        const lowerTotal = formData.seatConfiguration.lowerDeck.singleSeats + 
+                                         (formData.seatConfiguration.lowerDeck.doubleSeats * 2) + 
+                                         formData.seatConfiguration.lowerDeck.sleeperBerths
+                        const upperTotal = formData.seatConfiguration.upperDeck.singleSeats + 
+                                         (formData.seatConfiguration.upperDeck.doubleSeats * 2) + 
+                                         formData.seatConfiguration.upperDeck.sleeperBerths
+                        return lowerTotal + upperTotal
+                      })()}
+                      readOnly
                     />
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Capacity is automatically calculated based on seat configuration
+                  </p>
                 </div>
 
                 {/* Pricing */}
@@ -342,6 +698,17 @@ function BusTypesContent() {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Seat Configuration */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Seat Configuration</h3>
+                  <SeatConfiguration
+                    configuration={formData.seatConfiguration}
+                    onUpdate={(config) => setFormData(prev => ({ ...prev, seatConfiguration: config }))}
+                    lowerPrice={formData.lowerSeaterPrice}
+                    upperPrice={formData.upperSeaterPrice}
+                  />
                 </div>
 
                 {/* Amenities */}

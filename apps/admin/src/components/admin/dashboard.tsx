@@ -164,7 +164,7 @@ export function AdminDashboard() {
                   </div>
                   {!onboardingProgress.organizationCreated && (
                     <Button size="sm" variant="outline" asChild className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/50">
-                      <a href="/organizations">Complete</a>
+                      <a href="/organizations?openForm=true">Complete</a>
                     </Button>
                   )}
                 </div>
@@ -185,7 +185,7 @@ export function AdminDashboard() {
                   </div>
                   {!onboardingProgress.busTypeCreated && (
                     <Button size="sm" variant="outline" asChild className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/50">
-                      <a href="/bus-types">Complete</a>
+                      <a href="/bus-types?openForm=true">Complete</a>
                     </Button>
                   )}
                 </div>
@@ -206,7 +206,7 @@ export function AdminDashboard() {
                   </div>
                   {!onboardingProgress.routeCreated && (
                     <Button size="sm" variant="outline" asChild className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/50">
-                      <a href="/routes">Complete</a>
+                      <a href="/routes?openForm=true">Complete</a>
                     </Button>
                   )}
                 </div>
