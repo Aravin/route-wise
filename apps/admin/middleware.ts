@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 // Routes that are public (no auth required)
-const publicRoutes = ['/auth/login', '/onboarding', '/logout-success', '/api/auth/callback', '/api/auth/logout', '/logout']
+const publicRoutes = ['/auth/login', '/logout-success', '/api/auth/callback', '/api/auth/logout', '/logout']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl

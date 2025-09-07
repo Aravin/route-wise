@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const organization = await mongoDBService.getOrganizationByUserId(user.userId)
     if (!organization) {
       return NextResponse.json(
-        { error: 'No organization found. Please complete onboarding first.' },
+        { error: 'No organization found. Please create an organization first.' },
         { status: 400 }
       )
     }

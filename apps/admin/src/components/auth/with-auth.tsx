@@ -1,25 +1,16 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { mongoDBService } from '@/lib/mongodb-service'
-
-interface WithAuthOptions {
-  requireOnboarding?: boolean
-}
 
 export default function withAuth<P extends object>(
-  WrappedComponent: React.ComponentType<P>,
-  options: WithAuthOptions = { requireOnboarding: true }
+  WrappedComponent: React.ComponentType<P>
 ) {
   return function AuthenticatedComponent(props: P) {
     const [isAuthenticated, setIsAuthenticated] = useState(false)
-    const [isOnboardingComplete, setIsOnboardingComplete] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
-    const router = useRouter()
 
     useEffect(() => {
-      const checkAuthAndOnboarding = async () => {
+      const checkAuth = async () => {
         try {
           // Check authentication
           const response = await fetch('/api/auth/me')
@@ -28,34 +19,7 @@ export default function withAuth<P extends object>(
             return
           }
 
-          const userData = await response.json()
           setIsAuthenticated(true)
-
-          // Check onboarding status if required
-          if (options.requireOnboarding) {
-            try {
-              const onboardingResponse = await fetch('/api/onboarding/status')
-              if (onboardingResponse.ok) {
-                const onboardingData = await onboardingResponse.json()
-                if (onboardingData?.isComplete) {
-                  setIsOnboardingComplete(true)
-                } else {
-                  router.push('/onboarding')
-                  return
-                }
-              } else {
-                // If we can't check onboarding status, redirect to onboarding
-                router.push('/onboarding')
-                return
-              }
-            } catch (error) {
-              console.error('Error checking onboarding status:', error)
-              router.push('/onboarding')
-              return
-            }
-          } else {
-            setIsOnboardingComplete(true)
-          }
         } catch (error) {
           console.error('Error checking authentication:', error)
           window.location.href = '/api/auth/login?action=login'
@@ -64,8 +28,8 @@ export default function withAuth<P extends object>(
         }
       }
 
-      checkAuthAndOnboarding()
-    }, [router])
+      checkAuth()
+    }, [])
 
     if (isLoading) {
       return (
@@ -78,7 +42,7 @@ export default function withAuth<P extends object>(
       )
     }
 
-    if (!isAuthenticated || (options.requireOnboarding && !isOnboardingComplete)) {
+    if (!isAuthenticated) {
       return null // Will redirect
     }
 

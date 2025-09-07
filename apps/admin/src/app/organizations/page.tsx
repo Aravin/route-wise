@@ -1,7 +1,5 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -514,63 +512,14 @@ function OrganizationsContent() {
   )
 }
 
-export default function OrganizationsPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isOnboardingComplete, setIsOnboardingComplete] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
+export default async function OrganizationsPage() {
+  const cookieStore = cookies()
+  const sessionCookie = cookieStore.get('auth0_session')
+  const userIdCookie = cookieStore.get('user_id')
 
-  useEffect(() => {
-    const checkAuthAndOnboarding = async () => {
-      try {
-        // Check authentication
-        const response = await fetch('/api/auth/me')
-        if (!response.ok) {
-          window.location.href = '/api/auth/login?action=login'
-          return
-        }
-
-        setIsAuthenticated(true)
-
-        // Check onboarding status
-        const onboardingResponse = await fetch('/api/onboarding/status')
-        if (onboardingResponse.ok) {
-          const onboardingData = await onboardingResponse.json()
-          if (onboardingData?.isComplete) {
-            setIsOnboardingComplete(true)
-          } else {
-            router.push('/onboarding')
-            return
-          }
-        } else {
-          // If we can't check onboarding status, redirect to onboarding
-          router.push('/onboarding')
-          return
-        }
-      } catch (error) {
-        console.error('Error checking authentication or onboarding:', error)
-        window.location.href = '/api/auth/login?action=login'
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    checkAuthAndOnboarding()
-  }, [router])
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated || !isOnboardingComplete) {
-    return null // Will redirect
+  // Check if user is authenticated
+  if (sessionCookie?.value !== 'authenticated' || !userIdCookie?.value) {
+    redirect('/api/auth/login?action=login')
   }
 
   return (

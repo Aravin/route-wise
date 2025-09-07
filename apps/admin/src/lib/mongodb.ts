@@ -49,10 +49,6 @@ export async function getOrganizationsCollection() {
   return db.collection('organizations')
 }
 
-export async function getOnboardingCollection() {
-  const db = await getDatabase()
-  return db.collection('onboarding')
-}
 
 export async function getBusTypesCollection() {
   const db = await getDatabase()
