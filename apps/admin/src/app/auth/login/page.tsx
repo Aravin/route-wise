@@ -61,9 +61,6 @@ export default function LoginPage() {
               
               <div className="text-center text-sm text-gray-600">
                 <p>Contact your administrator if you need access</p>
-                <p className="mt-2 text-xs text-orange-600">
-                  Note: Auth0 configuration required. Update .env.local with your Auth0 credentials.
-                </p>
               </div>
             </div>
           </CardContent>
