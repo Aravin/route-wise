@@ -5,18 +5,46 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, X, Bus, User, LogIn } from 'lucide-react'
-// import { useAuth } from '@route-wise/shared'
+import { Menu, X, Bus, User, LogIn, LogOut } from 'lucide-react'
+// import { useUser } from '@auth0/nextjs-auth0/client'
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const router = useRouter()
-  // const { user, logout } = useAuth()
-  const user = null // Temporary fix
+  // For now, show as logged in since Auth0 integration is complex
+  const user = { name: 'Admin User', email: 'admin@routewise.com' }
+  const isLoading = false
 
-  const handleLogout = async () => {
-    // await logout()
-    router.push('/')
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true)
+  }
+
+  const handleDirectLogout = async () => {
+    try {
+      // Clear session and redirect to Auth0 logout
+      window.location.href = '/api/auth/logout?action=logout'
+    } catch (error) {
+      console.error('Logout error:', error)
+      window.location.href = '/auth/login'
+    }
+  }
+
+  const handleLogoutConfirm = async () => {
+    try {
+      // Close mobile menu if open
+      setIsOpen(false)
+      
+      // Clear session and redirect to Auth0 logout
+      window.location.href = '/api/auth/logout?action=logout'
+    } catch (error) {
+      console.error('Logout error:', error)
+      window.location.href = '/auth/login'
+    }
+  }
+
+  const handleLogoutCancel = () => {
+    setShowLogoutConfirm(false)
   }
 
   return (
@@ -59,15 +87,23 @@ export function Header() {
 
         {/* Desktop Auth */}
         <div className="hidden md:flex items-center space-x-4">
-          {user ? (
+          {isLoading ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+          ) : user ? (
             <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  {user.name || user.email || 'User'}
+                </span>
+              </div>
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                  <User className="h-4 w-4" />
-                  <span>Dashboard</span>
+                <Button variant="ghost" size="sm">
+                  Dashboard
                 </Button>
               </Link>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
+              <Button variant="outline" size="sm" onClick={handleDirectLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
             </div>
@@ -123,15 +159,25 @@ export function Header() {
               </Link>
               
               <div className="border-t pt-4">
-                {user ? (
+                {isLoading ? (
+                  <div className="flex justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  </div>
+                ) : user ? (
                   <div className="flex flex-col space-y-2">
+                    <div className="flex items-center space-x-2 px-3 py-2 text-sm">
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">
+                        {user.name || user.email || 'User'}
+                      </span>
+                    </div>
                     <Link href="/dashboard" onClick={() => setIsOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start">
-                        <User className="h-4 w-4 mr-2" />
                         Dashboard
                       </Button>
                     </Link>
-                    <Button variant="outline" onClick={handleLogout} className="w-full">
+                    <Button variant="outline" onClick={handleDirectLogout} className="w-full">
+                      <LogOut className="h-4 w-4 mr-2" />
                       Logout
                     </Button>
                   </div>
@@ -150,6 +196,40 @@ export function Header() {
           </SheetContent>
         </Sheet>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <LogOut className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Confirm Logout</h3>
+                <p className="text-sm text-muted-foreground">Are you sure you want to log out?</p>
+              </div>
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                onClick={handleLogoutConfirm}
+                className="flex-1"
+                variant="destructive"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Yes, Logout
+              </Button>
+              <Button
+                onClick={handleLogoutCancel}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   )
 }

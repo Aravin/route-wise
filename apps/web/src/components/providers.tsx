@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ThemeProvider } from 'next-themes'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AuthProvider } from '@route-wise/shared'
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -25,10 +25,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
       })
   )
 
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider
-        attribute="class"
         defaultTheme="system"
         enableSystem
         disableTransitionOnChange
@@ -36,7 +41,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <AuthProvider config={{ enableRegister: true }}>
           {children}
         </AuthProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
+        {mounted && <ReactQueryDevtools initialIsOpen={false} />}
       </ThemeProvider>
     </QueryClientProvider>
   )

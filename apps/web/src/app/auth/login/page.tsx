@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-// import { useAuth } from '@route-wise/shared'
+import { useAuth } from '@route-wise/shared'
 import { Bus, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  // const { login } = useAuth()
+  const { login } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,7 +24,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // await login(email, password)
+      await login(email, password)
       toast.success('Login successful!')
       router.push('/dashboard')
     } catch (error: any) {

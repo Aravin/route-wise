@@ -1,50 +1,30 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-// import { useAuth } from '@route-wise/shared'
-import { Bus, Eye, EyeOff } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { Bus, AlertCircle } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  // const { login } = useAuth()
-  const router = useRouter()
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    try {
-      // await login(email, password)
-      toast.success('Login successful!')
-      router.push('/dashboard')
-    } catch (error: any) {
-      toast.error(error.message || 'Login failed')
-    } finally {
-      setLoading(false)
-    }
+  const searchParams = useSearchParams()
+  const error = searchParams.get('error')
+  
+  const handleLogin = () => {
+    // Redirect to Auth0 login
+    window.location.href = '/api/auth/login?action=login'
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Link href="/" className="flex items-center justify-center space-x-2 mb-6">
+          <div className="flex items-center justify-center space-x-2 mb-6">
             <Bus className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold gradient-text">RouteWise</span>
-          </Link>
-          <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900">Admin Login</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to your account to continue
+            Secure authentication powered by Auth0
           </p>
         </div>
 
@@ -52,58 +32,40 @@ export default function LoginPage() {
           <CardHeader>
             <CardTitle>Sign In</CardTitle>
             <CardDescription>
-              Enter your email and password to access your account
+              Your account is managed securely by Auth0
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign In'}
+            <div className="space-y-4">
+              <Button
+                onClick={handleLogin}
+                className="w-full"
+                size="lg"
+              >
+                Sign in with Auth0
               </Button>
-            </form>
 
+              {error === 'config' && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+                    <div>
+                      <h3 className="text-sm font-medium text-red-800">Configuration Error</h3>
+                      <p className="text-sm text-red-700 mt-1">
+                        Auth0 environment variables are missing. Please check your .env.local file.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="text-center text-sm text-gray-600">
+                <p>Contact your administrator if you need access</p>
+                <p className="mt-2 text-xs text-orange-600">
+                  Note: Auth0 configuration required. Update .env.local with your Auth0 credentials.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

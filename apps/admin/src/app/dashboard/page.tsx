@@ -1,6 +1,7 @@
 'use client'
 
-// import { useAuth } from '@route-wise/shared'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,30 +10,43 @@ import { Bus, Calendar, MapPin, CreditCard, User, Settings } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DashboardPage() {
-  // const { user, loading } = useAuth()
-  const user = null // Temporary fix
-  const loading = false // Temporary fix
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
-  if (loading) {
+  useEffect(() => {
+    // Check if user is authenticated (simplified check)
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/me')
+        if (response.ok) {
+          setIsAuthenticated(true)
+        } else {
+          router.push('/auth/login')
+        }
+      } catch (error) {
+        router.push('/auth/login')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    checkAuth()
+  }, [router])
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
       </div>
     )
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-muted-foreground mb-4">Please log in to access your dashboard.</p>
-          <Link href="/auth/login">
-            <Button>Login</Button>
-          </Link>
-        </div>
-      </div>
-    )
+  if (!isAuthenticated) {
+    return null // Will redirect to login
   }
 
   return (
@@ -41,7 +55,7 @@ export default function DashboardPage() {
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome back, {user.profile.firstName}!</h1>
+          <h1 className="text-3xl font-bold mb-2">Welcome back, Admin!</h1>
           <p className="text-muted-foreground">Manage your bookings and travel preferences</p>
         </div>
 
