@@ -2,8 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Header } from '@/components/layout/header'
-import { Footer } from '@/components/layout/footer'
+import { AdminLayout } from '@/components/layout/admin-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Bus, Calendar, MapPin, CreditCard, User, Settings } from 'lucide-react'
@@ -50,10 +49,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
+    <AdminLayout>
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Welcome back, Admin!</h1>
           <p className="text-muted-foreground">Manage your bookings and travel preferences</p>
@@ -191,9 +187,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+    </AdminLayout>
   )
 }

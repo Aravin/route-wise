@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Header } from '@/components/layout/header'
-import { Footer } from '@/components/layout/footer'
+import { AdminLayout } from '@/components/layout/admin-layout'
 import { Calendar, MapPin, Users, Search, Clock, Wifi, Snowflake } from 'lucide-react'
 
 export default function SearchPage() {
@@ -70,10 +69,7 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
+    <AdminLayout>
         {/* Search Form */}
         <Card className="mb-8">
           <CardHeader>
@@ -242,9 +238,6 @@ export default function SearchPage() {
             </Card>
           ))}
         </div>
-      </main>
-
-      <Footer />
-    </div>
+    </AdminLayout>
   )
 }
