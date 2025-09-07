@@ -11,8 +11,16 @@ export async function GET(request: NextRequest) {
 
     const progress = await mongoDBService.getOnboardingProgress(user.userId)
     
+    // If user doesn't exist or doesn't have onboarding steps, return default values
     if (!progress) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({
+        organizationCreated: false,
+        busTypeCreated: false,
+        routeCreated: false,
+        isComplete: false,
+        completedSteps: 0,
+        totalSteps: 3
+      })
     }
 
     return NextResponse.json(progress)

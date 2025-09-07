@@ -171,8 +171,37 @@ class MongoDBService {
     totalSteps: number
   } | null> {
     const user = await this.getUserByUserId(userId)
-    if (!user || !user.onboardingSteps) {
+    if (!user) {
       return null
+    }
+
+    // If user doesn't have onboardingSteps field, initialize it
+    if (!user.onboardingSteps) {
+      // Check if user has existing data to determine progress
+      const [organizations, busTypes, routes] = await Promise.all([
+        this.getOrganizationsByUserId(userId),
+        this.getBusTypesByUserId(userId),
+        this.getRoutesByUserId(userId)
+      ])
+
+      const onboardingSteps = {
+        organizationCreated: organizations.length > 0,
+        busTypeCreated: busTypes.length > 0,
+        routeCreated: routes.length > 0
+      }
+
+      // Update user with onboarding steps
+      await this.updateUser(userId, { onboardingSteps })
+
+      const completedSteps = Object.values(onboardingSteps).filter(step => step === true).length
+      const totalSteps = Object.keys(onboardingSteps).length
+
+      return {
+        ...onboardingSteps,
+        isComplete: user.onboardingComplete,
+        completedSteps,
+        totalSteps
+      }
     }
 
     const steps = user.onboardingSteps
