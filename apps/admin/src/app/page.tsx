@@ -9,7 +9,7 @@ export default async function AdminHomePage() {
 
   // Check if user is authenticated
   if (sessionCookie?.value !== 'authenticated' || !userIdCookie?.value) {
-    redirect('/auth/login')
+    redirect('/api/auth/login?action=login')
   }
 
   try {

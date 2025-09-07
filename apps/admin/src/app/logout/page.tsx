@@ -11,12 +11,12 @@ export default function LogoutPage() {
     fetch('/api/auth/logout')
       .then(() => {
         // Redirect to login after logout
-        router.push('/auth/login')
+        window.location.href = '/api/auth/login?action=login'
       })
       .catch((error) => {
         console.error('Logout error:', error)
         // Still redirect to login even if API fails
-        router.push('/auth/login')
+        window.location.href = '/api/auth/login?action=login'
       })
   }, [router])
 

@@ -6,9 +6,9 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get('state') || '/dashboard'
   const error = searchParams.get('error')
   
-  if (error) {
-    return NextResponse.redirect(new URL(`/auth/login?error=${error}`, request.url))
-  }
+    if (error) {
+      return NextResponse.redirect(new URL(`/api/auth/login?action=login&error=${error}`, request.url))
+    }
   
   if (code) {
     try {
@@ -83,9 +83,9 @@ export async function GET(request: NextRequest) {
     } catch (error) {
       console.error('Auth0 callback error:', error)
       // Redirect to login with error if Auth0 fails
-      return NextResponse.redirect(new URL(`/auth/login?error=auth_failed`, request.url))
+      return NextResponse.redirect(new URL(`/api/auth/login?action=login&error=auth_failed`, request.url))
     }
   }
   
-  return NextResponse.redirect(new URL('/auth/login', request.url))
+  return NextResponse.redirect(new URL('/api/auth/login?action=login', request.url))
 }

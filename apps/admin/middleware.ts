@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest) {
   const userIdCookie = request.cookies.get('user_id')
 
   if (sessionCookie?.value !== 'authenticated' || !userIdCookie?.value) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    return NextResponse.redirect(new URL('/api/auth/login?action=login', request.url))
   }
 
   return NextResponse.next()

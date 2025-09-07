@@ -526,7 +526,7 @@ export default function OrganizationsPage() {
         // Check authentication
         const response = await fetch('/api/auth/me')
         if (!response.ok) {
-          router.push('/auth/login')
+          window.location.href = '/api/auth/login?action=login'
           return
         }
 
@@ -549,7 +549,7 @@ export default function OrganizationsPage() {
         }
       } catch (error) {
         console.error('Error checking authentication or onboarding:', error)
-        router.push('/auth/login')
+        window.location.href = '/api/auth/login?action=login'
       } finally {
         setIsLoading(false)
       }

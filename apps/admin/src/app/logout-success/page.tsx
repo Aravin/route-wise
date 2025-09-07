@@ -12,7 +12,7 @@ export default function LogoutSuccessPage() {
   useEffect(() => {
     // Auto-redirect to login after 3 seconds
     const timer = setTimeout(() => {
-      router.push('/auth/login')
+      window.location.href = '/api/auth/login?action=login'
     }, 3000)
 
     return () => clearTimeout(timer)
@@ -51,7 +51,7 @@ export default function LogoutSuccessPage() {
               </div>
               
               <Button
-                onClick={() => router.push('/auth/login')}
+                onClick={() => window.location.href = '/api/auth/login?action=login'}
                 className="w-full"
                 size="lg"
               >

@@ -114,7 +114,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       window.location.href = '/api/auth/logout?action=logout'
     } catch (error) {
       console.error('Logout error:', error)
-      window.location.href = '/auth/login'
+      window.location.href = '/api/auth/login?action=login'
     }
   }
 

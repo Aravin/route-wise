@@ -24,7 +24,7 @@ export default function withAuth<P extends object>(
           // Check authentication
           const response = await fetch('/api/auth/me')
           if (!response.ok) {
-            router.push('/auth/login')
+            window.location.href = '/api/auth/login?action=login'
             return
           }
 
@@ -58,7 +58,7 @@ export default function withAuth<P extends object>(
           }
         } catch (error) {
           console.error('Error checking authentication:', error)
-          router.push('/auth/login')
+          window.location.href = '/api/auth/login?action=login'
         } finally {
           setIsLoading(false)
         }
