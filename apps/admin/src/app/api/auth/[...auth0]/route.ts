@@ -30,9 +30,10 @@ export async function GET(request: NextRequest) {
   }
   
   if (action === 'logout') {
-    // Simple logout without returnTo to avoid Auth0 configuration issues
+    const returnTo = searchParams.get('returnTo') || '/logout-success'
     const logoutUrl = `https://${auth0Domain}/v2/logout?` + new URLSearchParams({
-      client_id: clientId
+      client_id: clientId,
+      returnTo: `${baseURL}${returnTo}`
     })
     
     return NextResponse.redirect(logoutUrl)

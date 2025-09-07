@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    // Clear all authentication cookies
-    const response = NextResponse.redirect(new URL('/api/auth/login?action=login', request.url))
+    // Clear all authentication cookies and redirect to logout success
+    const response = NextResponse.redirect(new URL('/logout-success', request.url))
     
     // Clear session cookie
     response.cookies.set('auth0_session', '', {
@@ -40,6 +40,6 @@ export async function GET(request: NextRequest) {
     return response
   } catch (error) {
     console.error('Logout error:', error)
-    return NextResponse.redirect(new URL('/api/auth/login?action=login', request.url))
+    return NextResponse.redirect(new URL('/logout-success', request.url))
   }
 }

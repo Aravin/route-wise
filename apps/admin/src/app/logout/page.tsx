@@ -7,16 +7,16 @@ export default function LogoutPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Call logout API
+    // Call logout API to clear cookies and redirect to logout success
     fetch('/api/auth/logout')
       .then(() => {
-        // Redirect to login after logout
-        window.location.href = '/api/auth/login?action=login'
+        // Redirect to logout success page
+        window.location.href = '/logout-success'
       })
       .catch((error) => {
         console.error('Logout error:', error)
-        // Still redirect to login even if API fails
-        window.location.href = '/api/auth/login?action=login'
+        // Still redirect to logout success even if API fails
+        window.location.href = '/logout-success'
       })
   }, [router])
 
