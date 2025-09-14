@@ -14,7 +14,6 @@ import {
   Trash2, 
   Search, 
   Users, 
-  DollarSign, 
   Snowflake,
   X,
   Check,
@@ -24,6 +23,10 @@ import {
   Bed
 } from 'lucide-react'
 import { ACType, SeatingType, Amenity } from '@/lib/bus-types'
+import { SleeperIcon } from '@/components/ui/sleeper-icon'
+import { SeaterIcon } from '@/components/ui/seater-icon'
+import { CurrencyIcon } from '@/components/ui/currency-icon'
+import { formatCurrency, getCurrencySymbol } from '@/lib/currency'
 
 interface BusType {
   _id: string
@@ -42,12 +45,24 @@ interface BusType {
       doubleSeats: number
       sleeperBerths: number
       doubleSleeperBerths: number
+      skipLeftFirstRow: boolean
+      skipLeftLastRow: boolean
+      skipRightFirstRow: boolean
+      skipRightLastRow: boolean
+      crossSeat: boolean
+      middleSeat: boolean
     }
     upperDeck: {
       singleSeats: number
       doubleSeats: number
       sleeperBerths: number
       doubleSleeperBerths: number
+      skipLeftFirstRow: boolean
+      skipLeftLastRow: boolean
+      skipRightFirstRow: boolean
+      skipRightLastRow: boolean
+      crossSeat: boolean
+      middleSeat: boolean
     }
   }
   createdAt: string
@@ -84,26 +99,60 @@ function SeatConfiguration({
     })
   }
 
+  const updateSkipSeats = (deck: 'lowerDeck' | 'upperDeck', type: 'skipLeftFirstRow' | 'skipLeftLastRow' | 'skipRightFirstRow' | 'skipRightLastRow', value: boolean) => {
+    onUpdate({
+      ...configuration,
+      [deck]: {
+        ...configuration[deck],
+        [type]: value
+      }
+    })
+  }
+
+  const updateCrossSeat = (deck: 'lowerDeck' | 'upperDeck', type: 'crossSeat', value: boolean) => {
+    onUpdate({
+      ...configuration,
+      [deck]: {
+        ...configuration[deck],
+        [type]: value,
+        // Disable middle seat when cross seat is enabled (mutual exclusivity)
+        middleSeat: value ? false : configuration[deck].middleSeat
+      }
+    })
+  }
+
+  const updateMiddleSeat = (deck: 'lowerDeck' | 'upperDeck', type: 'middleSeat', value: boolean) => {
+    onUpdate({
+      ...configuration,
+      [deck]: {
+        ...configuration[deck],
+        [type]: value,
+        // Disable cross seat when middle seat is enabled (mutual exclusivity)
+        crossSeat: value ? false : configuration[deck].crossSeat
+      }
+    })
+  }
+
   const resetSeatConfigForSeatingType = (seatingType: SeatingType) => {
     let newConfig = { ...configuration }
     
     if (seatingType === SeatingType.SLEEPER) {
       // All sleepers - reset both decks to sleeper defaults
       newConfig = {
-        lowerDeck: { singleSeats: 8, doubleSeats: 8, sleeperBerths: 0, doubleSleeperBerths: 0 },
-        upperDeck: { singleSeats: 8, doubleSeats: 8, sleeperBerths: 0, doubleSleeperBerths: 0 }
+        lowerDeck: { singleSeats: 8, doubleSeats: 8, sleeperBerths: 0, doubleSleeperBerths: 0, skipLeftFirstRow: false, skipLeftLastRow: false, skipRightFirstRow: false, skipRightLastRow: false, crossSeat: false, middleSeat: false },
+        upperDeck: { singleSeats: 8, doubleSeats: 8, sleeperBerths: 0, doubleSleeperBerths: 0, skipLeftFirstRow: false, skipLeftLastRow: false, skipRightFirstRow: false, skipRightLastRow: false, crossSeat: false, middleSeat: false }
       }
     } else if (seatingType === SeatingType.SEATER) {
-      // Lower seater, upper sleeper
+      // Lower seater, upper sleeper - middle seat for seater, cross seat for sleeper
       newConfig = {
-        lowerDeck: { singleSeats: 8, doubleSeats: 8, sleeperBerths: 0, doubleSleeperBerths: 0 },
-        upperDeck: { singleSeats: 8, doubleSeats: 8, sleeperBerths: 0, doubleSleeperBerths: 0 }
+        lowerDeck: { singleSeats: 8, doubleSeats: 8, sleeperBerths: 0, doubleSleeperBerths: 0, skipLeftFirstRow: false, skipLeftLastRow: false, skipRightFirstRow: false, skipRightLastRow: false, crossSeat: false, middleSeat: false },
+        upperDeck: { singleSeats: 8, doubleSeats: 8, sleeperBerths: 0, doubleSleeperBerths: 0, skipLeftFirstRow: false, skipLeftLastRow: false, skipRightFirstRow: false, skipRightLastRow: false, crossSeat: false, middleSeat: false }
       }
     } else if (seatingType === SeatingType.SEATER_SLEEPER) {
       // Mixed - lower can have all 4 types, upper is always sleeper
       newConfig = {
-        lowerDeck: { singleSeats: 4, doubleSeats: 4, sleeperBerths: 4, doubleSleeperBerths: 4 },
-        upperDeck: { singleSeats: 8, doubleSeats: 8, sleeperBerths: 0, doubleSleeperBerths: 0 }
+        lowerDeck: { singleSeats: 4, doubleSeats: 4, sleeperBerths: 4, doubleSleeperBerths: 4, skipLeftFirstRow: false, skipLeftLastRow: false, skipRightFirstRow: false, skipRightLastRow: false, crossSeat: false, middleSeat: false },
+        upperDeck: { singleSeats: 8, doubleSeats: 8, sleeperBerths: 0, doubleSleeperBerths: 0, skipLeftFirstRow: false, skipLeftLastRow: false, skipRightFirstRow: false, skipRightLastRow: false, crossSeat: false, middleSeat: false }
       }
     }
     
@@ -113,6 +162,36 @@ function SeatConfiguration({
   const getTotalSeats = (deck: 'lowerDeck' | 'upperDeck') => {
     const deckConfig = configuration[deck]
     return deckConfig.singleSeats + (deckConfig.doubleSeats * 2) + deckConfig.sleeperBerths + (deckConfig.doubleSleeperBerths * 2)
+  }
+
+  const renderSeatWithSkip = (seatType: 'seater' | 'sleeper', isFirstRow: boolean, isLastRow: boolean, index: number, key: string, deck: 'lowerDeck' | 'upperDeck', side: 'left' | 'right') => {
+    const deckConfig = configuration[deck]
+    const shouldSkip = (isFirstRow && side === 'left' && deckConfig.skipLeftFirstRow) || 
+                      (isFirstRow && side === 'right' && deckConfig.skipRightFirstRow) ||
+                      (isLastRow && side === 'left' && deckConfig.skipLeftLastRow) ||
+                      (isLastRow && side === 'right' && deckConfig.skipRightLastRow)
+    
+    if (shouldSkip) {
+      return (
+        <div key={key} className={`w-12 ${seatType === 'sleeper' ? 'h-16' : 'h-8'} bg-gray-300 dark:bg-gray-500 border-2 border-gray-400 dark:border-gray-600 rounded flex items-center justify-center shadow-sm opacity-50`}>
+          <X className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+        </div>
+      )
+    }
+    
+    if (seatType === 'seater') {
+      return (
+        <div key={key} className="w-12 h-8 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-600 rounded flex items-center justify-center shadow-sm">
+          <SeaterIcon />
+        </div>
+      )
+    } else {
+      return (
+        <div key={key} className="w-12 h-16 bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-300 dark:border-purple-600 rounded flex items-center justify-center shadow-sm">
+          <SleeperIcon />
+        </div>
+      )
+    }
   }
 
   const getSeatType = (deck: 'lowerDeck' | 'upperDeck') => {
@@ -125,12 +204,10 @@ function SeatConfiguration({
     } else if (seatingType === SeatingType.SEATER) {
       return deck === 'lowerDeck' ? 'seater' : 'sleeper' // Lower seater, upper sleeper
     } else if (seatingType === SeatingType.SEATER_SLEEPER) {
-      // Mixed configuration - upper deck is always sleeper, lower deck can have all 4 types
+      // Mixed configuration - upper deck is always sleeper, lower deck shows mixed layout
       if (deck === 'upperDeck') return 'sleeper'
-      // Lower deck - check what's actually configured
-      if (deckConfig.sleeperBerths > 0) return 'sleeper'
-      if (deckConfig.doubleSeats > 0 || deckConfig.singleSeats > 0) return 'seater'
-      return 'seater' // Default to seater
+      // Lower deck - always show mixed layout for configuration
+      return 'mixed'
     }
     
     return 'seater' // Default fallback
@@ -163,7 +240,7 @@ function SeatConfiguration({
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">₹{price}</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(price)}</div>
               <div className="text-sm text-gray-600 dark:text-gray-300">per seat</div>
             </div>
           </div>
@@ -181,11 +258,11 @@ function SeatConfiguration({
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Driver</span>
               </div>
             ) : (
-              <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-3 flex items-center space-x-2 border border-blue-300 dark:border-blue-600">
-                <div className="w-6 h-6 bg-blue-500 dark:bg-blue-400 rounded-full flex items-center justify-center">
+              <div className="bg-gray-200 dark:bg-gray-600 rounded-lg p-3 flex items-center space-x-2">
+                <div className="w-6 h-6 bg-gray-400 dark:bg-gray-500 rounded-full flex items-center justify-center">
                   <Bus className="h-3 w-3 text-white" />
                 </div>
-                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Upper Deck</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Upper Deck</span>
               </div>
             )}
           </div>
@@ -195,48 +272,137 @@ function SeatConfiguration({
             {/* Bus Structure */}
             <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 border-2 border-gray-300 dark:border-gray-600">
               {/* Seat Layout based on type */}
-              {seatType === 'sleeper' ? (
+              {seatType === 'mixed' ? (
+                /* Mixed Layout - Both Seater and Sleeper */
+                <div className="flex justify-between space-x-4">
+                  {/* Left Side - Mixed Single Seats */}
+                  <div className="w-16 space-y-2">
+                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Left Side - Mixed</div>
+                    <div className="flex flex-col items-start space-y-1">
+                      {/* Show single seats first */}
+                      {Array.from({ length: leftSeats }).map((_, index) => {
+                        const isFirstRow = index === 0
+                        const isLastRow = index === leftSeats - 1
+                        return renderSeatWithSkip('seater', isFirstRow, isLastRow, index, `left-seater-${index}`, deck, 'left')
+                      })}
+                      {/* Then show single sleepers */}
+                      {Array.from({ length: sleeperBerths }).map((_, index) => {
+                        const isFirstRow = leftSeats === 0 && index === 0
+                        const isLastRow = leftSeats === 0 && index === sleeperBerths - 1
+                        return renderSeatWithSkip('sleeper', isFirstRow, isLastRow, index, `left-sleeper-${index}`, deck, 'left')
+                      })}
+                      {leftSeats === 0 && sleeperBerths === 0 && (
+                        <div className="w-12 h-8 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">-</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Middle Seat or Walkway */}
+                  {deck === 'lowerDeck' && deckConfig.middleSeat ? (
+                    <div className="w-16 space-y-2">
+                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Middle</div>
+                      <div className="w-12 h-8 bg-blue-100 dark:bg-blue-900/30 rounded flex items-center justify-center shadow-sm">
+                        <SeaterIcon className="h-6 w-6" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-8 flex items-center justify-center">
+                      <div className="w-1 h-full bg-yellow-200 dark:bg-yellow-800 rounded"></div>
+                    </div>
+                  )}
+
+                  {/* Right Side - Mixed Double Seats */}
+                  <div className="w-32 space-y-2">
+                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Right Side - Mixed</div>
+                    <div className="flex flex-col items-end space-y-1">
+                      {/* Show double seats first */}
+                      {Array.from({ length: rightSeats }).map((_, index) => {
+                        const isFirstRow = index === 0
+                        const isLastRow = index === rightSeats - 1
+                        return (
+                          <div key={`right-seater-${index}`} className="flex space-x-1">
+                            {renderSeatWithSkip('seater', isFirstRow, isLastRow, index, `right-seater-left-${index}`, deck, 'right')}
+                            {renderSeatWithSkip('seater', isFirstRow, isLastRow, index, `right-seater-right-${index}`, deck, 'right')}
+                          </div>
+                        )
+                      })}
+                      {/* Then show double sleepers */}
+                      {Array.from({ length: deckConfig.doubleSleeperBerths }).map((_, index) => {
+                        const isFirstRow = rightSeats === 0 && index === 0
+                        const isLastRow = rightSeats === 0 && index === deckConfig.doubleSleeperBerths - 1
+                        return (
+                          <div key={`right-sleeper-${index}`} className="flex space-x-1">
+                            {renderSeatWithSkip('sleeper', isFirstRow, isLastRow, index, `right-sleeper-left-${index}`, deck, 'right')}
+                            {renderSeatWithSkip('sleeper', isFirstRow, isLastRow, index, `right-sleeper-right-${index}`, deck, 'right')}
+                          </div>
+                        )
+                      })}
+                      {rightSeats === 0 && deckConfig.doubleSleeperBerths === 0 && (
+                        <div className="flex space-x-1">
+                          <div className="w-12 h-8 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">-</span>
+                          </div>
+                          <div className="w-12 h-8 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">-</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : seatType === 'sleeper' ? (
                 /* Sleeper Berth Layout - Left and Right Sides */
                 <div className="flex justify-center space-x-4">
                   {/* Left Side (Single Sleepers) */}
                   <div className="w-16 space-y-2">
-                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Left Side</div>
-                    {Array.from({ length: leftSeats }).map((_, index) => (
-                      <div key={`left-sleeper-${index}`} className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-300 dark:border-purple-600 rounded flex items-center justify-center shadow-sm">
-                        <Bed className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                    ))}
+                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Left Side - Single</div>
+                    {Array.from({ length: leftSeats }).map((_, index) => {
+                      const isFirstRow = index === 0
+                      const isLastRow = index === leftSeats - 1
+                      return renderSeatWithSkip('sleeper', isFirstRow, isLastRow, index, `left-sleeper-${index}`, deck, 'left')
+                    })}
                     {leftSeats === 0 && (
-                      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
+                      <div className="w-12 h-16 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">-</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Walkway */}
-                  <div className="w-8 flex items-center justify-center">
-                    <div className="w-1 h-full bg-yellow-200 dark:bg-yellow-800 rounded"></div>
-                  </div>
+                  {/* Middle Seat or Walkway */}
+                  {deck === 'lowerDeck' && deckConfig.middleSeat ? (
+                    <div className="w-16 space-y-2">
+                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Middle</div>
+                      <div className="w-12 h-8 bg-blue-100 dark:bg-blue-900/30 rounded flex items-center justify-center shadow-sm">
+                        <SeaterIcon className="h-6 w-6" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-8 flex items-center justify-center">
+                      <div className="w-1 h-full bg-yellow-200 dark:bg-yellow-800 rounded"></div>
+                    </div>
+                  )}
 
                   {/* Right Side (Double Sleepers) */}
                   <div className="w-32 space-y-2">
-                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Right Side (1+1)</div>
-                    {Array.from({ length: rightSeats }).map((_, index) => (
-                      <div key={`right-sleeper-${index}`} className="flex space-x-1">
-                        <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-300 dark:border-purple-600 rounded flex items-center justify-center shadow-sm">
-                          <Bed className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Right Side - Double</div>
+                    {Array.from({ length: rightSeats }).map((_, index) => {
+                      const isFirstRow = index === 0
+                      const isLastRow = index === rightSeats - 1
+                      return (
+                        <div key={`right-sleeper-${index}`} className="flex space-x-1">
+                          {renderSeatWithSkip('sleeper', isFirstRow, isLastRow, index, `right-sleeper-left-${index}`, deck, 'right')}
+                          {renderSeatWithSkip('sleeper', isFirstRow, isLastRow, index, `right-sleeper-right-${index}`, deck, 'right')}
                         </div>
-                        <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-300 dark:border-purple-600 rounded flex items-center justify-center shadow-sm">
-                          <Bed className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                     {rightSeats === 0 && (
                       <div className="flex space-x-1">
-                        <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
+                        <div className="w-12 h-16 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">-</span>
                         </div>
-                        <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
+                        <div className="w-12 h-16 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
                           <span className="text-xs text-gray-500 dark:text-gray-400">-</span>
                         </div>
                       </div>
@@ -248,12 +414,12 @@ function SeatConfiguration({
                 <div className="flex justify-center space-x-4">
                   {/* Left Side Seats */}
                   <div className="w-16 space-y-2">
-                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Left Side</div>
-                    {Array.from({ length: leftSeats }).map((_, index) => (
-                      <div key={`left-${index}`} className="w-12 h-8 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-600 rounded flex items-center justify-center shadow-sm">
-                        <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                      </div>
-                    ))}
+                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Left Side - Single</div>
+                    {Array.from({ length: leftSeats }).map((_, index) => {
+                      const isFirstRow = index === 0
+                      const isLastRow = index === leftSeats - 1
+                      return renderSeatWithSkip('seater', isFirstRow, isLastRow, index, `left-${index}`, deck, 'left')
+                    })}
                     {leftSeats === 0 && (
                       <div className="w-12 h-8 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
                         <span className="text-xs text-gray-500 dark:text-gray-400">-</span>
@@ -261,24 +427,33 @@ function SeatConfiguration({
                     )}
                   </div>
 
-                  {/* Walkway */}
-                  <div className="w-8 flex items-center justify-center">
-                    <div className="w-1 h-full bg-yellow-200 dark:bg-yellow-800 rounded"></div>
-                  </div>
+                  {/* Middle Seat or Walkway */}
+                  {deck === 'lowerDeck' && deckConfig.middleSeat ? (
+                    <div className="w-16 space-y-2">
+                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Middle</div>
+                      <div className="w-12 h-8 bg-blue-100 dark:bg-blue-900/30 rounded flex items-center justify-center shadow-sm">
+                        <SeaterIcon className="h-6 w-6" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-8 flex items-center justify-center">
+                      <div className="w-1 h-full bg-yellow-200 dark:bg-yellow-800 rounded"></div>
+                    </div>
+                  )}
 
                   {/* Right Side (Double Seats) */}
                   <div className="w-32 space-y-2">
-                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Right Side (1+1)</div>
-                    {Array.from({ length: rightSeats }).map((_, index) => (
-                      <div key={`right-${index}`} className="flex space-x-1">
-                        <div className="w-12 h-8 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-600 rounded flex items-center justify-center shadow-sm">
-                          <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                    <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Right Side - Double</div>
+                    {Array.from({ length: rightSeats }).map((_, index) => {
+                      const isFirstRow = index === 0
+                      const isLastRow = index === rightSeats - 1
+                      return (
+                        <div key={`right-${index}`} className="flex space-x-1">
+                          {renderSeatWithSkip('seater', isFirstRow, isLastRow, index, `right-left-${index}`, deck, 'right')}
+                          {renderSeatWithSkip('seater', isFirstRow, isLastRow, index, `right-right-${index}`, deck, 'right')}
                         </div>
-                        <div className="w-12 h-8 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-600 rounded flex items-center justify-center shadow-sm">
-                          <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                     {rightSeats === 0 && (
                       <div className="flex space-x-1">
                         <div className="w-12 h-8 bg-gray-200 dark:bg-gray-600 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded flex items-center justify-center">
@@ -293,19 +468,39 @@ function SeatConfiguration({
                 </div>
               )}
 
+              {/* Cross Seat - Only for Single Sleeper Configurations */}
+              {(seatType === 'sleeper' || seatType === 'mixed') && deckConfig.crossSeat && (
+                <div className="mt-4 flex flex-col items-center">
+                  <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Cross Seat (Last Row) - Single Sleeper</div>
+                  <div className="w-12 h-16 bg-purple-100 dark:bg-purple-900/30 rounded flex items-center justify-center shadow-sm">
+                    <SleeperIcon className="h-6 w-6" />
+                  </div>
+                </div>
+              )}
+
+              {/* Middle Seat - Only for Lower Deck */}
+              {deck === 'lowerDeck' && deckConfig.middleSeat && (
+                <div className="mt-4 flex flex-col items-center">
+                  <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center mb-2">Middle Seat (Last Row) - Single Seater</div>
+                  <div className="w-12 h-8 bg-blue-100 dark:bg-blue-900/30 rounded flex items-center justify-center shadow-sm">
+                    <SeaterIcon className="h-6 w-6" />
+                  </div>
+                </div>
+              )}
+
               {/* Seat Type Indicators */}
               <div className="mt-4 flex justify-center space-x-6">
                 {seatType === 'sleeper' ? (
                   <>
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-600 rounded flex items-center justify-center">
-                        <Bed className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                      <div className="w-4 h-5 bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-600 rounded flex items-center justify-center">
+                        <SleeperIcon className="h-3 w-3" />
                       </div>
                       <span className="text-xs text-gray-600 dark:text-gray-400">Single Sleeper</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-600 rounded flex items-center justify-center">
-                        <Bed className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                      <div className="w-4 h-5 bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-600 rounded flex items-center justify-center">
+                        <SleeperIcon className="h-3 w-3" />
                       </div>
                       <span className="text-xs text-gray-600 dark:text-gray-400">Double Sleeper</span>
                     </div>
@@ -314,13 +509,13 @@ function SeatConfiguration({
                   <>
                     <div className="flex items-center space-x-2">
                       <div className="w-4 h-4 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-600 rounded flex items-center justify-center">
-                        <User className="h-2 w-2 text-blue-600 dark:text-blue-400" />
+                        <SeaterIcon className="h-2 w-2" />
                       </div>
                       <span className="text-xs text-gray-600 dark:text-gray-400">Single Seater</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-4 h-4 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-600 rounded flex items-center justify-center">
-                        <User className="h-2 w-2 text-blue-600 dark:text-blue-400" />
+                        <SeaterIcon className="h-2 w-2" />
                       </div>
                       <span className="text-xs text-gray-600 dark:text-gray-400">Double Seater</span>
                     </div>
@@ -416,11 +611,11 @@ function SeatConfiguration({
                 </div>
               </div>
             </div>
-          ) : formData.seatingType === SeatingType.SEATER_SLEEPER && deck === 'lowerDeck' ? (
+          ) : seatType === 'mixed' ? (
             /* Mixed Configuration - All 4 Types for Lower Deck */
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Single Seater</Label>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Left Side - Single Seater</Label>
                 <div className="flex items-center space-x-2">
                   <Button
                     type="button"
@@ -454,41 +649,7 @@ function SeatConfiguration({
               </div>
               
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Single Sleeper</Label>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateSeatConfig(deck, 'sleeperBerths', deckConfig.sleeperBerths - 1)}
-                    disabled={deckConfig.sleeperBerths <= 0}
-                    className="w-8 h-8 p-0"
-                  >
-                    -
-                  </Button>
-                  <Input
-                    type="number"
-                    value={deckConfig.sleeperBerths}
-                    onChange={(e) => updateSeatConfig(deck, 'sleeperBerths', parseInt(e.target.value) || 0)}
-                    className="w-16 text-center h-8"
-                    min="0"
-                    max="15"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateSeatConfig(deck, 'sleeperBerths', deckConfig.sleeperBerths + 1)}
-                    disabled={deckConfig.sleeperBerths >= 15}
-                    className="w-8 h-8 p-0"
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Double Seater</Label>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Right Side - Double Seater</Label>
                 <div className="flex items-center space-x-2">
                   <Button
                     type="button"
@@ -522,7 +683,41 @@ function SeatConfiguration({
               </div>
               
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Double Sleeper</Label>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Left Side - Single Sleeper</Label>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => updateSeatConfig(deck, 'sleeperBerths', deckConfig.sleeperBerths - 1)}
+                    disabled={deckConfig.sleeperBerths <= 0}
+                    className="w-8 h-8 p-0"
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
+                    value={deckConfig.sleeperBerths}
+                    onChange={(e) => updateSeatConfig(deck, 'sleeperBerths', parseInt(e.target.value) || 0)}
+                    className="w-16 text-center h-8"
+                    min="0"
+                    max="15"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => updateSeatConfig(deck, 'sleeperBerths', deckConfig.sleeperBerths + 1)}
+                    disabled={deckConfig.sleeperBerths >= 15}
+                    className="w-8 h-8 p-0"
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Right Side - Double Sleeper</Label>
                 <div className="flex items-center space-x-2">
                   <Button
                     type="button"
@@ -627,6 +822,143 @@ function SeatConfiguration({
               </div>
             </div>
           )}
+          
+          {/* Skip Seats Configuration */}
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Skip Seats Configuration</h4>
+            <div className="grid grid-cols-2 gap-6">
+              {/* Left Side Controls */}
+              <div className="space-y-3">
+                <h5 className="text-xs font-medium text-gray-600 dark:text-gray-400">Left Side</h5>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id={`${deck}-skip-left-first-row`}
+                      checked={deckConfig.skipLeftFirstRow}
+                      onChange={(e) => updateSkipSeats(deck, 'skipLeftFirstRow', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <label htmlFor={`${deck}-skip-left-first-row`} className="text-sm text-gray-700 dark:text-gray-300">
+                      Skip First Row
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id={`${deck}-skip-left-last-row`}
+                      checked={deckConfig.skipLeftLastRow}
+                      onChange={(e) => updateSkipSeats(deck, 'skipLeftLastRow', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <label htmlFor={`${deck}-skip-left-last-row`} className="text-sm text-gray-700 dark:text-gray-300">
+                      Skip Last Row
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right Side Controls */}
+              <div className="space-y-3">
+                <h5 className="text-xs font-medium text-gray-600 dark:text-gray-400">Right Side</h5>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id={`${deck}-skip-right-first-row`}
+                      checked={deckConfig.skipRightFirstRow}
+                      onChange={(e) => updateSkipSeats(deck, 'skipRightFirstRow', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <label htmlFor={`${deck}-skip-right-first-row`} className="text-sm text-gray-700 dark:text-gray-300">
+                      Skip First Row
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id={`${deck}-skip-right-last-row`}
+                      checked={deckConfig.skipRightLastRow}
+                      onChange={(e) => updateSkipSeats(deck, 'skipRightLastRow', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    <label htmlFor={`${deck}-skip-right-last-row`} className="text-sm text-gray-700 dark:text-gray-300">
+                      Skip Last Row
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+              Skipped seats will be marked as unavailable in the bus layout
+            </p>
+          </div>
+          
+          {/* Cross Seat Configuration - Only for Single Sleeper */}
+          {(seatType === 'sleeper' || seatType === 'mixed') && (
+            <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Cross Seat Configuration (Single Sleeper Only)</h4>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id={`${deck}-cross-seat`}
+                    checked={deckConfig.crossSeat}
+                    onChange={(e) => updateCrossSeat(deck, 'crossSeat', e.target.checked)}
+                    disabled={deck === 'lowerDeck' && deckConfig.middleSeat}
+                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <label htmlFor={`${deck}-cross-seat`} className={`text-sm ${deck === 'lowerDeck' && deckConfig.middleSeat ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                    Enable Cross Seat (Last Row) - Single Sleeper
+                    {deck === 'lowerDeck' && deckConfig.middleSeat && (
+                      <span className="text-xs text-orange-600 dark:text-orange-400 ml-2">(Disabled - Middle seat enabled)</span>
+                    )}
+                  </label>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Cross seat spans the entire width of the bus in the last row (sleeper only)
+                {deck === 'lowerDeck' && deckConfig.middleSeat && (
+                  <span className="block text-orange-600 dark:text-orange-400 mt-1">
+                    Cannot enable cross seat when middle seat is active
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Middle Seat Configuration - Only for Lower Deck */}
+          {deck === 'lowerDeck' && (
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Middle Seat Configuration (Lower Deck Only)</h4>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id={`${deck}-middle-seat`}
+                    checked={deckConfig.middleSeat}
+                    onChange={(e) => updateMiddleSeat(deck, 'middleSeat', e.target.checked)}
+                    disabled={deckConfig.crossSeat}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <label htmlFor={`${deck}-middle-seat`} className={`text-sm ${deckConfig.crossSeat ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                    Enable Middle Seat (Between Left and Right)
+                    {deckConfig.crossSeat && (
+                      <span className="text-xs text-orange-600 dark:text-orange-400 ml-2">(Disabled - Cross seat enabled)</span>
+                    )}
+                  </label>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Middle seat positioned between left and right sides (replaces aisle)
+                {deckConfig.crossSeat && (
+                  <span className="block text-orange-600 dark:text-orange-400 mt-1">
+                    Cannot enable middle seat when cross seat is active
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -718,84 +1050,6 @@ function SeatConfiguration({
           {renderBusLayout('upperDeck', 'Upper')}
         </div>
       </div>
-      
-      {/* Real Bus Layout Legend */}
-      <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
-        <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Real Bus Layout</h4>
-        <div className="space-y-4">
-          {/* Bus Layout Diagram */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-            <div className="text-center mb-4">
-              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Typical Bus Layout</div>
-            </div>
-            <div className="flex justify-center space-x-4">
-              {/* Left Side */}
-              <div className="w-16 space-y-2">
-                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center">Left Side</div>
-                <div className="w-12 h-8 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-600 rounded flex items-center justify-center mx-auto">
-                  <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="w-12 h-8 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-600 rounded flex items-center justify-center mx-auto">
-                  <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="text-xs text-center text-gray-500 dark:text-gray-400">Single Seater</div>
-              </div>
-
-              {/* Walkway */}
-              <div className="w-8 flex items-center justify-center">
-                <div className="w-1 h-16 bg-yellow-200 dark:bg-yellow-800 rounded"></div>
-              </div>
-
-              {/* Right Side */}
-              <div className="w-32 space-y-2">
-                <div className="text-xs font-medium text-gray-600 dark:text-gray-400 text-center">Right Side (1+1)</div>
-                <div className="flex space-x-1">
-                  <div className="w-12 h-8 bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-600 rounded flex items-center justify-center">
-                    <User className="h-3 w-3 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="w-12 h-8 bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-600 rounded flex items-center justify-center">
-                    <User className="h-3 w-3 text-green-600 dark:text-green-400" />
-                  </div>
-                </div>
-                <div className="flex space-x-1">
-                  <div className="w-12 h-8 bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-600 rounded flex items-center justify-center">
-                    <User className="h-3 w-3 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="w-12 h-8 bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-600 rounded flex items-center justify-center">
-                    <User className="h-3 w-3 text-green-600 dark:text-green-400" />
-                  </div>
-                </div>
-                <div className="text-xs text-center text-gray-500 dark:text-gray-400">Double Seater</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Legend Items */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-600 rounded flex items-center justify-center">
-                <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <div className="font-medium text-gray-900 dark:text-white">Left Side - Single Seater</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Individual seats on the left side</div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-300 dark:border-blue-600 rounded flex items-center justify-center">
-                <div className="flex space-x-1">
-                  <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                  <User className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-              <div>
-                <div className="font-medium text-gray-900 dark:text-white">Right Side - Double Seater</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Side-by-side seats (1+1) on the right</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
@@ -821,13 +1075,25 @@ function BusTypesContent() {
         singleSeats: 8,
         doubleSeats: 8,
         sleeperBerths: 0,
-        doubleSleeperBerths: 0
+        doubleSleeperBerths: 0,
+        skipLeftFirstRow: false,
+        skipLeftLastRow: false,
+        skipRightFirstRow: false,
+        skipRightLastRow: false,
+        crossSeat: false,
+        middleSeat: false
       },
       upperDeck: {
         singleSeats: 8,
         doubleSeats: 8,
         sleeperBerths: 0,
-        doubleSleeperBerths: 0
+        doubleSleeperBerths: 0,
+        skipLeftFirstRow: false,
+        skipLeftLastRow: false,
+        skipRightFirstRow: false,
+        skipRightLastRow: false,
+        crossSeat: false,
+        middleSeat: false
       }
     }
   })
@@ -910,16 +1176,28 @@ function BusTypesContent() {
       amenities: busType.amenities,
       seatConfiguration: {
         lowerDeck: {
-          singleSeats: 8,
-          doubleSeats: 8,
-          sleeperBerths: 0,
-          doubleSleeperBerths: 0
+          singleSeats: busType.seatConfiguration.lowerDeck.singleSeats,
+          doubleSeats: busType.seatConfiguration.lowerDeck.doubleSeats,
+          sleeperBerths: busType.seatConfiguration.lowerDeck.sleeperBerths,
+          doubleSleeperBerths: busType.seatConfiguration.lowerDeck.doubleSleeperBerths,
+          skipLeftFirstRow: busType.seatConfiguration.lowerDeck.skipLeftFirstRow || false,
+          skipLeftLastRow: busType.seatConfiguration.lowerDeck.skipLeftLastRow || false,
+          skipRightFirstRow: busType.seatConfiguration.lowerDeck.skipRightFirstRow || false,
+          skipRightLastRow: busType.seatConfiguration.lowerDeck.skipRightLastRow || false,
+          crossSeat: busType.seatConfiguration.lowerDeck.crossSeat || false,
+          middleSeat: busType.seatConfiguration.lowerDeck.middleSeat || false
         },
         upperDeck: {
-          singleSeats: 8,
-          doubleSeats: 8,
-          sleeperBerths: 0,
-          doubleSleeperBerths: 0
+          singleSeats: busType.seatConfiguration.upperDeck.singleSeats,
+          doubleSeats: busType.seatConfiguration.upperDeck.doubleSeats,
+          sleeperBerths: busType.seatConfiguration.upperDeck.sleeperBerths,
+          doubleSleeperBerths: busType.seatConfiguration.upperDeck.doubleSleeperBerths,
+          skipLeftFirstRow: busType.seatConfiguration.upperDeck.skipLeftFirstRow || false,
+          skipLeftLastRow: busType.seatConfiguration.upperDeck.skipLeftLastRow || false,
+          skipRightFirstRow: busType.seatConfiguration.upperDeck.skipRightFirstRow || false,
+          skipRightLastRow: busType.seatConfiguration.upperDeck.skipRightLastRow || false,
+          crossSeat: busType.seatConfiguration.upperDeck.crossSeat || false,
+          middleSeat: busType.seatConfiguration.upperDeck.middleSeat || false
         }
       }
     })
@@ -958,13 +1236,25 @@ function BusTypesContent() {
           singleSeats: 8,
           doubleSeats: 8,
           sleeperBerths: 0,
-          doubleSleeperBerths: 0
+          doubleSleeperBerths: 0,
+          skipLeftFirstRow: false,
+          skipLeftLastRow: false,
+          skipRightFirstRow: false,
+          skipRightLastRow: false,
+          crossSeat: false,
+          middleSeat: false
         },
         upperDeck: {
           singleSeats: 8,
           doubleSeats: 8,
           sleeperBerths: 0,
-          doubleSleeperBerths: 0
+          doubleSleeperBerths: 0,
+          skipLeftFirstRow: false,
+          skipLeftLastRow: false,
+          skipRightFirstRow: false,
+          skipRightLastRow: false,
+          crossSeat: false,
+          middleSeat: false
         }
       }
     })
@@ -1072,33 +1362,31 @@ function BusTypesContent() {
                     </select>
                   </div>
 
-                </div>
-
-                {/* Capacity - Auto-calculated */}
-                <div className="space-y-2">
-                  <Label htmlFor="capacity">Total Capacity</Label>
-                  <div className="relative">
-                    <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="capacity"
-                      type="number"
-                      placeholder="Auto-calculated"
-                      className="pl-10 bg-muted"
-                      value={(() => {
-                        const lowerTotal = formData.seatConfiguration.lowerDeck.singleSeats + 
-                                         (formData.seatConfiguration.lowerDeck.doubleSeats * 2) + 
-                                         formData.seatConfiguration.lowerDeck.sleeperBerths
-                        const upperTotal = formData.seatConfiguration.upperDeck.singleSeats + 
-                                         (formData.seatConfiguration.upperDeck.doubleSeats * 2) + 
-                                         formData.seatConfiguration.upperDeck.sleeperBerths
-                        return lowerTotal + upperTotal
-                      })()}
-                      readOnly
-                    />
+                  <div className="space-y-2">
+                    <Label htmlFor="capacity">Total Capacity</Label>
+                    <div className="relative">
+                      <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="capacity"
+                        type="number"
+                        placeholder="Auto-calculated"
+                        className="pl-10 bg-muted"
+                        value={(() => {
+                          const lowerTotal = formData.seatConfiguration.lowerDeck.singleSeats + 
+                                           (formData.seatConfiguration.lowerDeck.doubleSeats * 2) + 
+                                           formData.seatConfiguration.lowerDeck.sleeperBerths
+                          const upperTotal = formData.seatConfiguration.upperDeck.singleSeats + 
+                                           (formData.seatConfiguration.upperDeck.doubleSeats * 2) + 
+                                           formData.seatConfiguration.upperDeck.sleeperBerths
+                          return lowerTotal + upperTotal
+                        })()}
+                        readOnly
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Auto-calculated from seat config
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Capacity is automatically calculated based on seat configuration
-                  </p>
                 </div>
 
                 {/* Pricing */}
@@ -1108,7 +1396,7 @@ function BusTypesContent() {
                     <div className="space-y-2">
                       <Label htmlFor="lowerSeaterPrice">Lower Deck Seater Price *</Label>
                       <div className="relative">
-                        <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <CurrencyIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="lowerSeaterPrice"
                           type="number"
@@ -1124,7 +1412,7 @@ function BusTypesContent() {
                     <div className="space-y-2">
                       <Label htmlFor="upperSeaterPrice">Upper Deck Seater Price</Label>
                       <div className="relative">
-                        <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <CurrencyIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="upperSeaterPrice"
                           type="number"
@@ -1139,7 +1427,7 @@ function BusTypesContent() {
                     <div className="space-y-2">
                       <Label htmlFor="lowerSleeperPrice">Lower Deck Sleeper Price</Label>
                       <div className="relative">
-                        <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <CurrencyIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="lowerSleeperPrice"
                           type="number"
@@ -1154,7 +1442,7 @@ function BusTypesContent() {
                     <div className="space-y-2">
                       <Label htmlFor="upperSleeperPrice">Upper Deck Sleeper Price</Label>
                       <div className="relative">
-                        <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <CurrencyIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="upperSleeperPrice"
                           type="number"
@@ -1270,10 +1558,10 @@ function BusTypesContent() {
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Pricing</p>
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p>Lower Seater: ₹{busType.lowerSeaterPrice}</p>
-                    {busType.upperSeaterPrice > 0 && <p>Upper Seater: ₹{busType.upperSeaterPrice}</p>}
-                    {busType.lowerSleeperPrice > 0 && <p>Lower Sleeper: ₹{busType.lowerSleeperPrice}</p>}
-                    {busType.upperSleeperPrice > 0 && <p>Upper Sleeper: ₹{busType.upperSleeperPrice}</p>}
+                    <p>Lower Seater: {formatCurrency(busType.lowerSeaterPrice)}</p>
+                    {busType.upperSeaterPrice > 0 && <p>Upper Seater: {formatCurrency(busType.upperSeaterPrice)}</p>}
+                    {busType.lowerSleeperPrice > 0 && <p>Lower Sleeper: {formatCurrency(busType.lowerSleeperPrice)}</p>}
+                    {busType.upperSleeperPrice > 0 && <p>Upper Sleeper: {formatCurrency(busType.upperSleeperPrice)}</p>}
                   </div>
                 </div>
 
